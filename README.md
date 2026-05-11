@@ -2,7 +2,7 @@
 
 > Application Windows portable pour gérer visuellement vos instances WSL2.
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%2011%20x64-lightgrey)
 
 ---
