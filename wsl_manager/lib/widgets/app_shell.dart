@@ -95,7 +95,8 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
     if (loc.startsWith('/instance') || loc == '/') return 0;
     if (loc == '/templates') return 1;
     if (loc == '/snapshots') return 2;
-    if (loc == '/settings') return 3;
+    if (loc == '/logs') return 3;
+    if (loc == '/settings') return 4;
     return 0;
   }
 
@@ -151,6 +152,8 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
                       case 2:
                         context.go('/snapshots');
                       case 3:
+                        context.go('/logs');
+                      case 4:
                         context.go('/settings');
                     }
                   },
@@ -169,6 +172,11 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
                       icon: Icon(Icons.camera_alt_outlined),
                       selectedIcon: Icon(Icons.camera_alt),
                       label: Text('Snapshots'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.terminal_outlined),
+                      selectedIcon: Icon(Icons.terminal),
+                      label: Text('Logs'),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.settings_outlined),

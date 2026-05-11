@@ -34,54 +34,78 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const GlobalStatsBar(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Rechercher une instance...',
-                    prefixIcon: Icon(Icons.search, size: 18),
-                    isDense: true,
-                    border: OutlineInputBorder(),
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  ),
-                  onChanged: (v) => setState(() => _search = v),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final searchField = TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Rechercher une instance...',
+                  prefixIcon: Icon(Icons.search, size: 18),
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 ),
-              ),
-              const SizedBox(width: 12),
-              DropdownButton<_SortMode>(
-                value: _sort,
-                isDense: true,
-                items: const [
-                  DropdownMenuItem(
-                    value: _SortMode.name,
-                    child: Text('Nom A-Z'),
+                onChanged: (v) => setState(() => _search = v),
+              );
+              final controls = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButton<_SortMode>(
+                    value: _sort,
+                    isDense: true,
+                    items: const [
+                      DropdownMenuItem(
+                        value: _SortMode.name,
+                        child: Text('Nom A-Z'),
+                      ),
+                      DropdownMenuItem(
+                        value: _SortMode.state,
+                        child: Text('Etat'),
+                      ),
+                      DropdownMenuItem(
+                        value: _SortMode.version,
+                        child: Text('Version WSL'),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => _sort = v!),
                   ),
-                  DropdownMenuItem(
-                    value: _SortMode.state,
-                    child: Text('Etat'),
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.create_new_folder, size: 18),
+                    label: const Text('Groupe'),
+                    onPressed: () => _showCreateGroupDialog(context),
                   ),
-                  DropdownMenuItem(
-                    value: _SortMode.version,
-                    child: Text('Version WSL'),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Nouvelle instance'),
+                    onPressed: () => context.go('/create'),
                   ),
                 ],
-                onChanged: (v) => setState(() => _sort = v!),
-              ),
-              const SizedBox(width: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.create_new_folder, size: 18),
-                label: const Text('Groupe'),
-                onPressed: () => _showCreateGroupDialog(context),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Nouvelle instance'),
-                onPressed: () => context.go('/create'),
-              ),
-            ],
+              );
+
+              if (constraints.maxWidth < 760) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    searchField,
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: controls,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: searchField),
+                  const SizedBox(width: 12),
+                  controls,
+                ],
+              );
+            },
           ),
         ),
         Expanded(

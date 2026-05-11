@@ -2,13 +2,19 @@ import 'dart:io';
 import '../models/wsl_instance.dart';
 import '../models/wsl_port.dart';
 import '../utils/wsl_parser.dart';
+import 'command_log_service.dart';
 
 class WslService {
   static WslService? _instance;
   static WslService get instance => _instance ??= WslService._();
   WslService._();
 
-  Future<ProcessResult> _runWsl(List<String> arguments) async {
+  Future<ProcessResult> _runWsl(
+    List<String> arguments, {
+    bool logCommand = true,
+  }) async {
+    final logEntry =
+        logCommand ? CommandLogService.instance.start('wsl', arguments) : null;
     final result = await Process.run(
       'wsl',
       arguments,
@@ -16,6 +22,7 @@ class WslService {
       stdoutEncoding: null,
       stderrEncoding: null,
     );
+    if (logEntry != null) CommandLogService.instance.finish(logEntry, result);
     if (result.exitCode != 0) {
       throw WslCommandException(
           arguments, result.exitCode, _resultOutput(result));
@@ -35,8 +42,9 @@ class WslService {
     return '';
   }
 
-  Future<List<WslInstance>> listInstances() async {
-    final result = await _runWsl(['--list', '--verbose']);
+  Future<List<WslInstance>> listInstances({bool logCommand = true}) async {
+    final result =
+        await _runWsl(['--list', '--verbose'], logCommand: logCommand);
     final bytes = result.stdout as List<int>;
     final decoded = WslParser.decodeWslOutput(bytes);
     return WslParser.parseVerboseList(decoded);
@@ -52,7 +60,14 @@ class WslService {
 
   Future<void> deleteInstance(String name) async {
     await stopInstance(name);
-    await Process.run('wsl', ['--unregister', name], runInShell: true);
+    final arguments = ['--unregister', name];
+    final logEntry = CommandLogService.instance.start('wsl', arguments);
+    final result = await Process.run('wsl', arguments, runInShell: true);
+    CommandLogService.instance.finish(logEntry, result);
+    if (result.exitCode != 0) {
+      throw WslCommandException(
+          arguments, result.exitCode, _resultOutput(result));
+    }
   }
 
   Future<void> exportInstance(
@@ -314,14 +329,28 @@ class WslService {
   }
 
   Future<void> openInTerminal(String name) async {
-    final result = await Process.run('wt', ['wsl', '-d', name], runInShell: true);
+    final arguments = ['wsl', '-d', name];
+    final logEntry = CommandLogService.instance.start('wt', arguments);
+    final result = await Process.run('wt', arguments, runInShell: true);
+    CommandLogService.instance.finish(logEntry, result);
     if (result.exitCode != 0) {
       // Fallback for users without Windows Terminal installed
-      await Process.run(
+      final fallbackArguments = [
+        '/c',
+        'start',
+        '',
         'cmd.exe',
-        ['/c', 'start', '', 'cmd.exe', '/k', 'wsl -d $name'],
+        '/k',
+        'wsl -d $name'
+      ];
+      final fallbackLogEntry =
+          CommandLogService.instance.start('cmd.exe', fallbackArguments);
+      final fallbackResult = await Process.run(
+        'cmd.exe',
+        fallbackArguments,
         runInShell: true,
       );
+      CommandLogService.instance.finish(fallbackLogEntry, fallbackResult);
     }
   }
 }

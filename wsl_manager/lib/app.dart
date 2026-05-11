@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/config_provider.dart';
 import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/command_logs/command_logs_screen.dart';
 import 'screens/instance_detail/instance_detail_screen.dart';
 import 'screens/wizard/create_wizard_screen.dart';
 import 'screens/templates/templates_screen.dart';
@@ -29,6 +30,7 @@ final _router = GoRouter(
             path: '/templates', builder: (_, __) => const TemplatesScreen()),
         GoRoute(
             path: '/snapshots', builder: (_, __) => const SnapshotsScreen()),
+        GoRoute(path: '/logs', builder: (_, __) => const CommandLogsScreen()),
         GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         GoRoute(
           path: '/settings/wslconfig',

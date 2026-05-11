@@ -7,6 +7,7 @@
 **/.packages
 **/*.g.dart
 **/*.freezed.dart
+.github/*
 
 # Flutter Windows
 **/windows/flutter/generated_plugin_registrant.cc
@@ -17,6 +18,15 @@
 .idea/
 .vscode/
 *.iml
+
+#divers
+specifications/*
+
+#IA
+.claude/*
+CLAUDE.md
+.cursor/*
+.continue/*
 
 # OS
 Thumbs.db
