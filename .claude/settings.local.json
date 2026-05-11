@@ -20,7 +20,12 @@
       "Bash(git -C \"c:\\\\_TRAV\\\\_DEV\\\\PERSO\\\\wslManager\" add wsl_manager/lib/services/wslconfig_service.dart wsl_manager/lib/screens/settings/wslconfig_editor_screen.dart wsl_manager/lib/screens/settings/settings_screen.dart wsl_manager/lib/app.dart)",
       "Bash(flutter build *)",
       "Bash(flutter doctor *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "PowerShell(Get-ChildItem \"$env:TEMP\\\\wslManagerV2_clean\" | Select-Object Name, Attributes)",
+      "Read(//c/Users/jreynet/AppData/Local/Temp/wslManagerV2_clean/**)",
+      "Bash(echo \"\")",
+      "Bash(echo \"# Docs conception \\(exclues du repo public\\)\")",
+      "Bash(echo \"wsl_manager_output/\")"
     ]
   }
 }
