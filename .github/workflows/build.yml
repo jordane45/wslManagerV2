@@ -1,0 +1,96 @@
+name: Build Windows Portable
+
+on:
+  push:
+    branches: [master]
+    tags:
+      - 'V*'
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Flutter ───────────────────────────────────────────────────────────
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      # ── Dependencies ──────────────────────────────────────────────────────
+      - name: Install dependencies
+        working-directory: wsl_manager
+        run: flutter pub get
+
+      # ── Analyze ───────────────────────────────────────────────────────────
+      - name: Analyze
+        working-directory: wsl_manager
+        run: flutter analyze
+
+      # ── Build ─────────────────────────────────────────────────────────────
+      - name: Build Windows release
+        working-directory: wsl_manager
+        run: flutter build windows --release
+
+      # ── Package ───────────────────────────────────────────────────────────
+      - name: Package portable ZIP
+        working-directory: wsl_manager
+        shell: pwsh
+        run: |
+          $src  = "build\windows\x64\runner\Release"
+          $dest = "dist\WSLManager"
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Copy-Item -Recurse "$src\*" $dest
+          if (Test-Path "$dest\wsl_manager.exe") {
+            Rename-Item "$dest\wsl_manager.exe" "WSLManager.exe"
+          }
+          Compress-Archive -Path $dest -DestinationPath "dist\WSLManager_portable.zip" -Force
+          $mb = [math]::Round((Get-Item "dist\WSLManager_portable.zip").Length / 1MB, 1)
+          Write-Host "ZIP créé : dist\WSLManager_portable.zip ($mb MB)"
+
+      # ── Upload artifact (tous les builds) ─────────────────────────────────
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WSLManager_portable
+          path: wsl_manager/dist/WSLManager_portable.zip
+          retention-days: 30
+
+      # ── GitHub Release (tags V* uniquement) ───────────────────────────────
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/V')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag  = "${{ github.ref_name }}"
+          $zip  = "wsl_manager/dist/WSLManager_portable.zip"
+          $body = @"
+          ## WSL Manager $tag
+
+          ### Installation
+          1. Télécharger ``WSLManager_portable.zip``
+          2. Extraire dans le dossier de votre choix
+          3. Lancer ``WSLManager.exe``
+
+          > Aucune installation requise — application portable.
+          > Requiert Windows 11 x64 avec WSL2.
+
+          ### Licence
+          © Jordane Reynet — [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+          "@
+          gh release create $tag $zip --title "WSL Manager $tag" --notes $body

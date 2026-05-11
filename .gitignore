@@ -1,0 +1,48 @@
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/pubspec.lock
+**/.packages
+**/*.g.dart
+**/*.freezed.dart
+.github/*
+
+# Flutter Windows
+**/windows/flutter/generated_plugin_registrant.cc
+**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugins.cmake
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+#divers
+specifications/*
+
+#IA
+.claude/*
+CLAUDE.md
+AGENT.md
+.cursor/*
+.continue/*
+graphify-out/*
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Distribution
+dist/
+wsl_manager_output/graphify-out/
+
+# Secrets / local config
+.env
+*.local
+
+
+
+# Docs conception (exclues du repo public)
+wsl_manager_output/

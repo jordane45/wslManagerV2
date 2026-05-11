@@ -1,0 +1,11 @@
+{
+  "distros": [
+    { "name": "Ubuntu 24.04 LTS",  "wsl_name": "Ubuntu-24.04",  "icon": "ubuntu.png",    "download_url": "https://cloud-images.ubuntu.com/wsl/noble/current/ubuntu-noble-wsl-amd64-wsl.rootfs.tar.gz" },
+    { "name": "Ubuntu 22.04 LTS",  "wsl_name": "Ubuntu-22.04",  "icon": "ubuntu.png",    "download_url": "https://cloud-images.ubuntu.com/wsl/jammy/current/ubuntu-jammy-wsl-amd64-wsl.rootfs.tar.gz" },
+    { "name": "Debian 12",         "wsl_name": "Debian",         "icon": "debian.png",    "download_url": "https://github.com/debuerreotype/docker-debian-artifacts/releases/download/dist-amd64/debian-12-slim.tar.gz" },
+    { "name": "Kali Linux",        "wsl_name": "kali-linux",     "icon": "kali.png",      "download_url": "" },
+    { "name": "Alpine Linux",      "wsl_name": "Alpine",         "icon": "alpine.png",    "download_url": "" },
+    { "name": "openSUSE Leap 15",  "wsl_name": "openSUSE-Leap",  "icon": "opensuse.png",  "download_url": "" },
+    { "name": "Oracle Linux 9",    "wsl_name": "OracleLinux_9",  "icon": "oracle.png",    "download_url": "" }
+  ]
+}
