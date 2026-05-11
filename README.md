@@ -19,31 +19,41 @@ L'application s'intègre dans la barre système et reste disponible en arrière-
 
 ### Tableau de bord
 
-<!-- TODO: ajouter capture du tableau de bord -->
+![Tableau de bord](screencapture/dashboard.png)
 
 ### Détail d'une instance
 
-<!-- TODO: ajouter capture de l'écran de détail -->
+![Informations instance](screencapture/wsl_informations.png)
+
+![Actions disponibles](screencapture/actions.png)
+
+### Monitoring
+
+![Monitoring CPU/RAM](screencapture/monitoring.png)
+
+### Configuration WSL
+
+![Éditeur .wslconfig](screencapture/wsl_conf.png)
 
 ### Assistant de création
 
-<!-- TODO: ajouter capture du wizard de création -->
-
-### Gestion des snapshots
-
-<!-- TODO: ajouter capture de l'écran snapshots -->
+![Nouvelle instance](screencapture/nouvell_instance.png)
 
 ### Gestion des templates
 
-<!-- TODO: ajouter capture de l'écran templates -->
+![Templates](screencapture/templates.png)
 
 ### Journal des commandes
 
-<!-- TODO: ajouter capture de l'écran logs -->
+![Journal des commandes](screencapture/logs.png)
 
 ### Paramètres
 
-<!-- TODO: ajouter capture de l'écran paramètres -->
+![Paramètres 1](screencapture/parametres_1.png)
+
+![Paramètres 2](screencapture/parametres_2.png)
+
+![Paramètres 3](screencapture/parametres_3.png)
 
 ---
 
