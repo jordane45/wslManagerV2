@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "wsl-manager": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "c:\\_TRAV\\_DEV\\PERSO\\wslManager\\wsl_manager_mcp\\dist\\index.js"
+      ]
+    }
+  }
+}
