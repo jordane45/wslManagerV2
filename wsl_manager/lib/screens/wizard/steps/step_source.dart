@@ -63,13 +63,36 @@ class _StepSourceState extends ConsumerState<StepSource> {
           onTap: () => widget.onChanged(
               widget.state.copyWith(sourceType: SourceType.online)),
           child: type == SourceType.online
-              ? _DistroGrid(
-                  distros: _distros,
-                  selected: widget.state.officialDistroUrl,
-                  onSelect: (d) => widget.onChanged(widget.state.copyWith(
-                    officialDistroName: d.wslName,
-                    officialDistroUrl: d.downloadUrl,
-                  )),
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DistroGrid(
+                      distros: _distros,
+                      selected: widget.state.officialDistroName,
+                      useWebDownload: widget.state.useWebDownload,
+                      onSelect: (d) => widget.onChanged(widget.state.copyWith(
+                        officialDistroName: d.wslName,
+                        officialDistroUrl: d.downloadUrl,
+                      )),
+                    ),
+                    const SizedBox(height: 4),
+                    CheckboxListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      value: widget.state.useWebDownload,
+                      onChanged: (v) => widget.onChanged(
+                          widget.state.copyWith(useWebDownload: v ?? true)),
+                      title: const Text(
+                        'Télécharger via le web (--web-download)',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      subtitle: const Text(
+                        'Évite le Microsoft Store · active toutes les distros',
+                        style: TextStyle(fontSize: 11),
+                      ),
+                    ),
+                  ],
                 )
               : null,
         ),
@@ -231,11 +254,14 @@ class _SourceCard extends StatelessWidget {
 class _DistroGrid extends StatelessWidget {
   final List<_OfficialDistro> distros;
   final String? selected;
+  final bool useWebDownload;
   final ValueChanged<_OfficialDistro> onSelect;
-  const _DistroGrid(
-      {required this.distros,
-      required this.selected,
-      required this.onSelect});
+  const _DistroGrid({
+    required this.distros,
+    required this.selected,
+    required this.useWebDownload,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -249,11 +275,12 @@ class _DistroGrid extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: distros.map((d) {
-        final isSelected = selected == d.downloadUrl;
+        final isSelected = selected == d.wslName;
+        final enabled = useWebDownload || d.downloadUrl.isNotEmpty;
         return ChoiceChip(
           label: Text(d.name),
           selected: isSelected,
-          onSelected: d.downloadUrl.isEmpty ? null : (_) => onSelect(d),
+          onSelected: enabled ? (_) => onSelect(d) : null,
         );
       }).toList(),
     );

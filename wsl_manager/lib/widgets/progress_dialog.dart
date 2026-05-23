@@ -6,6 +6,7 @@ class ProgressStep {
   final String label;
   StepStatus status;
   String? errorMessage;
+  double? progress; // 0.0–1.0 ; null = indéterminé
 
   ProgressStep(this.label, {this.status = StepStatus.waiting});
 }
@@ -13,7 +14,10 @@ class ProgressStep {
 class ProgressDialog extends StatefulWidget {
   final String title;
   final List<ProgressStep> steps;
-  final Future<void> Function(void Function(int, StepStatus, [String?]) update) task;
+  final Future<void> Function(
+    void Function(int, StepStatus, [String?]) update,
+    void Function(int, double?) setProgress,
+  ) task;
 
   const ProgressDialog({
     super.key,
@@ -40,12 +44,17 @@ class _ProgressDialogState extends State<ProgressDialog> {
 
   Future<void> _run() async {
     try {
-      await widget.task((index, status, [error]) {
-        setState(() {
-          _steps[index].status = status;
-          if (error != null) _steps[index].errorMessage = error;
-        });
-      });
+      await widget.task(
+        (index, status, [error]) {
+          setState(() {
+            _steps[index].status = status;
+            if (error != null) _steps[index].errorMessage = error;
+          });
+        },
+        (index, progress) {
+          setState(() => _steps[index].progress = progress);
+        },
+      );
       setState(() => _done = true);
     } catch (e) {
       setState(() {
@@ -95,27 +104,39 @@ class _StepRow extends StatelessWidget {
     };
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          step.status == StepStatus.running
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(icon, size: 20, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(step.label),
-                if (step.errorMessage != null)
-                  Text(step.errorMessage!,
-                      style: const TextStyle(color: Colors.red, fontSize: 11)),
-              ],
-            ),
+          Row(
+            children: [
+              step.status == StepStatus.running
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(icon, size: 20, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(step.label),
+                    if (step.errorMessage != null)
+                      Text(step.errorMessage!,
+                          style: const TextStyle(color: Colors.red, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
           ),
+          if (step.status == StepStatus.running) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 28),
+              child: LinearProgressIndicator(value: step.progress),
+            ),
+          ],
         ],
       ),
     );

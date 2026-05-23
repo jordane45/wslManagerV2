@@ -20,6 +20,9 @@ class StepSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final webDownload =
+        state.useWebDownload && state.sourceType == SourceType.online;
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -32,14 +35,43 @@ class StepSummary extends StatelessWidget {
             child: Column(
               children: [
                 _Row('Source', _sourceLabel),
-                _Row('Nom de l\'instance', state.instanceName),
+                if (webDownload)
+                  _Row('Nom de l\'instance', state.officialDistroName ?? '—')
+                else
+                  _Row('Nom de l\'instance', state.instanceName),
                 _Row('Utilisateur', state.username),
                 const _Row('Mot de passe', '••••••••'),
-                _Row('Chemin d\'installation', state.installPath),
+                if (!webDownload)
+                  _Row('Chemin d\'installation', state.installPath),
+                if (webDownload)
+                  const _Row('Emplacement', 'Géré automatiquement par WSL'),
               ],
             ),
           ),
         ),
+        if (webDownload) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.4)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.download_for_offline, size: 16, color: Colors.blue),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Installation via wsl --install --web-download',
+                    style: TextStyle(fontSize: 12, color: Colors.blue),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(12),

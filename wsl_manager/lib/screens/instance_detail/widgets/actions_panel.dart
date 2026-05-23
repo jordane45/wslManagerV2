@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../models/wsl_instance.dart';
 import '../../../providers/instances_provider.dart';
@@ -21,11 +21,11 @@ class ActionsPanel extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        _ActionSection(title: 'Contrôle', actions: [
+        _ActionSection(title: 'ContrÃ´le', actions: [
           if (!isRunning)
             _ActionTile(
               icon: Icons.play_arrow,
-              label: 'Démarrer',
+              label: 'DÃ©marrer',
               onTap: () => _runInstanceAction(
                 context,
                 () => ref.read(instancesProvider.notifier).start(instance.name),
@@ -35,7 +35,7 @@ class ActionsPanel extends ConsumerWidget {
           if (isRunning)
             _ActionTile(
               icon: Icons.stop,
-              label: 'Arrêter',
+              label: 'ArrÃªter',
               onTap: () => _runInstanceAction(
                 context,
                 () => ref.read(instancesProvider.notifier).stop(instance.name),
@@ -44,7 +44,7 @@ class ActionsPanel extends ConsumerWidget {
             ),
           _ActionTile(
             icon: Icons.star_outline,
-            label: 'Définir comme défaut',
+            label: 'DÃ©finir comme dÃ©faut',
             onTap: () => _runInstanceAction(
               context,
               () => ref
@@ -76,12 +76,12 @@ class ActionsPanel extends ConsumerWidget {
         _ActionSection(title: 'Sauvegarde', actions: [
           _ActionTile(
             icon: Icons.layers,
-            label: 'Créer un template',
+            label: 'CrÃ©er un template',
             onTap: () => _createTemplate(context, ref),
           ),
           _ActionTile(
             icon: Icons.camera_alt,
-            label: 'Créer un snapshot',
+            label: 'CrÃ©er un snapshot',
             onTap: () => _createSnapshot(context, ref),
           ),
         ]),
@@ -99,7 +99,7 @@ class ActionsPanel extends ConsumerWidget {
           ),
           _ActionTile(
             icon: Icons.lock_reset,
-            label: 'Réinitialiser le mot de passe',
+            label: 'RÃ©initialiser le mot de passe',
             onTap: () => _resetPassword(context),
           ),
         ]),
@@ -123,13 +123,13 @@ class ActionsPanel extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'Création du template',
+        title: 'CrÃ©ation du template',
         steps: [
-          ProgressStep('Arrêt temporaire de l\'instance'),
+          ProgressStep('ArrÃªt temporaire de l\'instance'),
           ProgressStep('Export en cours...'),
           ProgressStep('Enregistrement du template'),
         ],
-        task: (update) async {
+        task: (update, _) async {
           update(0, StepStatus.running);
           update(0, StepStatus.done);
           update(1, StepStatus.running);
@@ -173,12 +173,12 @@ class ActionsPanel extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'Création du snapshot',
+        title: 'CrÃ©ation du snapshot',
         steps: [
           ProgressStep('Export en cours...'),
           ProgressStep('Enregistrement du snapshot'),
         ],
-        task: (update) async {
+        task: (update, _) async {
           update(0, StepStatus.running);
           await SnapshotService.instance
               .createSnapshot(instance.name, name, '');
@@ -209,7 +209,7 @@ class ActionsPanel extends ConsumerWidget {
           ProgressStep('Import sous le nouveau nom...'),
           ProgressStep('Nettoyage'),
         ],
-        task: (update) async {
+        task: (update, _) async {
           update(0, StepStatus.running);
           update(0, StepStatus.done);
           update(1, StepStatus.running);
@@ -233,12 +233,12 @@ class ActionsPanel extends ConsumerWidget {
       builder: (_) => ProgressDialog(
         title: 'Renommage',
         steps: [
-          ProgressStep('Arrêt...'),
+          ProgressStep('ArrÃªt...'),
           ProgressStep('Export...'),
           ProgressStep('Import sous le nouveau nom...'),
           ProgressStep('Suppression de l\'ancien'),
         ],
-        task: (update) async {
+        task: (update, _) async {
           for (var i = 0; i < 4; i++) {
             update(i, StepStatus.running);
           }
@@ -258,7 +258,7 @@ class ActionsPanel extends ConsumerWidget {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Réinitialiser le mot de passe'),
+        title: const Text('RÃ©initialiser le mot de passe'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -278,7 +278,7 @@ class ActionsPanel extends ConsumerWidget {
               child: const Text('Annuler')),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Réinitialiser')),
+              child: const Text('RÃ©initialiser')),
         ],
       ),
     );

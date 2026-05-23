@@ -24,6 +24,7 @@ class WizardState {
   final String username;
   final String password;
   final String installPath;
+  final bool useWebDownload;
 
   const WizardState({
     this.sourceType = SourceType.online,
@@ -36,6 +37,7 @@ class WizardState {
     this.username = '',
     this.password = '',
     this.installPath = '',
+    this.useWebDownload = true,
   });
 
   WizardState copyWith({
@@ -49,6 +51,7 @@ class WizardState {
     String? username,
     String? password,
     String? installPath,
+    bool? useWebDownload,
   }) {
     return WizardState(
       sourceType: sourceType ?? this.sourceType,
@@ -61,6 +64,7 @@ class WizardState {
       username: username ?? this.username,
       password: password ?? this.password,
       installPath: installPath ?? this.installPath,
+      useWebDownload: useWebDownload ?? this.useWebDownload,
     );
   }
 }
@@ -90,21 +94,25 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
   bool get _canProceed {
     switch (_step) {
       case 0:
-        return _state.sourceType == SourceType.localFile
-                ? (_state.localTarPath?.isNotEmpty ?? false)
-                : _state.sourceType == SourceType.url
-                    ? (_state.remoteUrl?.isNotEmpty ?? false)
-                    : _state.sourceType == SourceType.template
-                        ? (_state.templateId?.isNotEmpty ?? false)
-                        : (_state.officialDistroUrl?.isNotEmpty ?? false);
+        if (_state.sourceType == SourceType.localFile) return _state.localTarPath?.isNotEmpty ?? false;
+        if (_state.sourceType == SourceType.url) return _state.remoteUrl?.isNotEmpty ?? false;
+        if (_state.sourceType == SourceType.template) return _state.templateId?.isNotEmpty ?? false;
+        // online
+        return _state.useWebDownload
+            ? (_state.officialDistroName?.isNotEmpty ?? false)
+            : (_state.officialDistroUrl?.isNotEmpty ?? false);
       case 1:
-        return _state.instanceName.isNotEmpty;
+        return _state.useWebDownload && _state.sourceType == SourceType.online
+            ? true
+            : _state.instanceName.isNotEmpty;
       case 2:
         return _state.username.isNotEmpty;
       case 3:
         return _state.password.length >= 8;
       case 4:
-        return _state.installPath.isNotEmpty;
+        return _state.useWebDownload && _state.sourceType == SourceType.online
+            ? true
+            : _state.installPath.isNotEmpty;
       default:
         return true;
     }
@@ -200,43 +208,58 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
 
   Future<void> _create(BuildContext context) async {
     final s = _state;
+    final webDownload = s.sourceType == SourceType.online && s.useWebDownload;
+    final effectiveName = webDownload ? s.officialDistroName! : s.instanceName;
+
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
         title: 'Création de l\'instance',
         steps: [
-          if (s.sourceType == SourceType.online || s.sourceType == SourceType.url)
-            ProgressStep('Téléchargement...'),
-          ProgressStep('Import WSL...'),
+          if (webDownload)
+            ProgressStep('Installation via WSL (--web-download)...')
+          else ...[
+            if (s.sourceType == SourceType.online || s.sourceType == SourceType.url)
+              ProgressStep('Téléchargement...'),
+            ProgressStep('Import WSL...'),
+          ],
           ProgressStep('Configuration utilisateur...'),
           ProgressStep('Finalisation'),
         ],
-        task: (update) async {
+        task: (update, setProgress) async {
           int idx = 0;
-          String tarPath = s.localTarPath ?? '';
 
-          if (s.sourceType == SourceType.online ||
-              s.sourceType == SourceType.url) {
+          if (webDownload) {
             update(idx, StepStatus.running);
-            final url = s.sourceType == SourceType.online
-                ? s.officialDistroUrl!
-                : s.remoteUrl!;
-            tarPath = await DownloadService.instance
-                .downloadToTemp(url, (_) {});
+            await WslService.instance.installDistroWebDownload(
+              s.officialDistroName!,
+              onProgress: (p) => setProgress(idx, p),
+            );
+            update(idx, StepStatus.done);
+            idx++;
+          } else {
+            String tarPath = s.localTarPath ?? '';
+
+            if (s.sourceType == SourceType.online || s.sourceType == SourceType.url) {
+              update(idx, StepStatus.running);
+              final url = s.sourceType == SourceType.online
+                  ? s.officialDistroUrl!
+                  : s.remoteUrl!;
+              tarPath = await DownloadService.instance
+                  .downloadToTemp(url, (p) => setProgress(idx, p));
+              update(idx, StepStatus.done);
+              idx++;
+            }
+
+            update(idx, StepStatus.running);
+            await WslService.instance.importInstance(s.instanceName, s.installPath, tarPath);
             update(idx, StepStatus.done);
             idx++;
           }
 
           update(idx, StepStatus.running);
-          await WslService.instance
-              .importInstance(s.instanceName, s.installPath, tarPath);
-          update(idx, StepStatus.done);
-          idx++;
-
-          update(idx, StepStatus.running);
-          await WslService.instance
-              .setupUser(s.instanceName, s.username, s.password);
+          await WslService.instance.setupUser(effectiveName, s.username, s.password);
           update(idx, StepStatus.done);
           idx++;
 
@@ -248,7 +271,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
     );
 
     if ((result ?? false) && context.mounted) {
-      context.go('/instance/${s.instanceName}');
+      context.go('/instance/$effectiveName');
     }
   }
 }

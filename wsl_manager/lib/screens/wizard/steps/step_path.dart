@@ -56,6 +56,48 @@ class _StepPathState extends State<StepPath> {
 
   @override
   Widget build(BuildContext context) {
+    final webDownload =
+        widget.state.useWebDownload && widget.state.sourceType.name == 'online';
+
+    if (webDownload) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Emplacement d\'installation',
+                style: Theme.of(context).textTheme.bodyLarge),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'En mode --web-download, WSL gère automatiquement '
+                      'l\'emplacement d\'installation de la distro.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(

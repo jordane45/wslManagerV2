@@ -92,6 +92,46 @@ class WslService {
     });
   }
 
+  Future<void> installDistroWebDownload(
+    String wslName, {
+    void Function(double?)? onProgress,
+  }) async {
+    final args = [
+      '--install', wslName,
+      '--web-download',
+      '--no-launch',
+    ];
+    final logEntry = CommandLogService.instance.start('wsl.exe', args);
+    final process = await Process.start('wsl.exe', args, runInShell: false);
+
+    final progressRe = RegExp(r'(\d+(?:\.\d+)?)%');
+    final stdoutBuf = StringBuffer();
+    final stderrBuf = StringBuffer();
+
+    process.stdout.listen((chunk) {
+      final text = _decodeProcessOutput(chunk);
+      stdoutBuf.write(text);
+      final match = progressRe.firstMatch(text);
+      if (match != null) {
+        onProgress?.call(double.parse(match.group(1)!) / 100.0);
+      }
+    });
+    process.stderr.listen((chunk) {
+      stderrBuf.write(_decodeProcessOutput(chunk));
+    });
+
+    final exitCode = await process.exitCode;
+    CommandLogService.instance.finish(
+      logEntry,
+      ProcessResult(process.pid, exitCode, stdoutBuf.toString(), stderrBuf.toString()),
+    );
+
+    if (exitCode != 0) {
+      final output = stderrBuf.isNotEmpty ? stderrBuf.toString() : stdoutBuf.toString();
+      throw WslCommandException(args, exitCode, output.trim());
+    }
+  }
+
   Future<void> importInstance(
     String name,
     String installDir,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../models/snapshot.dart';
@@ -76,7 +76,7 @@ class SnapshotsTab extends ConsumerWidget {
               child: const Text('Annuler')),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-              child: const Text('Créer')),
+              child: const Text('CrÃ©er')),
         ],
       ),
     );
@@ -85,12 +85,12 @@ class SnapshotsTab extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'Création du snapshot',
+        title: 'CrÃ©ation du snapshot',
         steps: [
           ProgressStep('Export en cours...'),
           ProgressStep('Enregistrement'),
         ],
-        task: (update) async {
+        task: (update, _) async {
           update(0, StepStatus.running);
           await SnapshotService.instance.createSnapshot(instanceName, name, '');
           update(0, StepStatus.done);
@@ -107,7 +107,7 @@ class SnapshotsTab extends ConsumerWidget {
     final confirmed = await showConfirmDialog(context,
         title: 'Restaurer le snapshot',
         message:
-            'L\'instance "$instanceName" sera remplacée par ce snapshot. Cette action est irréversible.',
+            'L\'instance "$instanceName" sera remplacÃ©e par ce snapshot. Cette action est irrÃ©versible.',
         confirmLabel: 'Restaurer',
         destructive: true);
     if (!confirmed || !context.mounted) return;
@@ -119,9 +119,9 @@ class SnapshotsTab extends ConsumerWidget {
         steps: [
           ProgressStep('Suppression de l\'instance actuelle...'),
           ProgressStep('Importation du snapshot...'),
-          ProgressStep('Rafraîchissement'),
+          ProgressStep('RafraÃ®chissement'),
         ],
-        task: (update) async {
+        task: (update, _) async {
           update(0, StepStatus.running);
           await WslService.instance.stopInstance(instanceName);
           await WslService.instance.deleteInstance(instanceName);
@@ -141,7 +141,7 @@ class SnapshotsTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, WslSnapshot snapshot) async {
     final confirmed = await showConfirmDialog(context,
         title: 'Supprimer le snapshot',
-        message: 'Supprimer "${snapshot.name}" ? Cette action est irréversible.',
+        message: 'Supprimer "${snapshot.name}" ? Cette action est irrÃ©versible.',
         confirmLabel: 'Supprimer',
         destructive: true);
     if (!confirmed) return;
@@ -165,7 +165,7 @@ class _SnapshotTile extends StatelessWidget {
         leading: const Icon(Icons.camera_alt),
         title: Text(snapshot.name),
         subtitle: Text(
-            '$sizeMb Mo · ${timeago.format(snapshot.createdAt, locale: 'fr')}'),
+            '$sizeMb Mo Â· ${timeago.format(snapshot.createdAt, locale: 'fr')}'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
