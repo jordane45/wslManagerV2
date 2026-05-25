@@ -44,19 +44,27 @@ class _HistoryLineChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final chartRect = Rect.fromLTWH(34, 8, size.width - 42, size.height - 34);
     _drawGrid(canvas, chartRect);
-    _drawLabels(canvas, chartRect);
 
     if (samples.length < 2) {
+      _drawLabels(canvas, chartRect, '-5 min', 'Maintenant');
       _drawEmptyState(canvas, chartRect);
       return;
     }
 
     final now = DateTime.now();
-    final start = now.subtract(MonitoringHistoryNotifier.historyWindow);
-    _drawLine(
-        canvas, chartRect, start, now, cpuColor, (sample) => sample.cpuPercent);
-    _drawLine(
-        canvas, chartRect, start, now, ramColor, (sample) => sample.ramPercent);
+    final fullWindowStart = now.subtract(MonitoringHistoryNotifier.historyWindow);
+    // Adapt x-axis to actual data range when less than 5 minutes collected
+    final actualStart = samples.first.timestamp;
+    final start = actualStart.isAfter(fullWindowStart) ? actualStart : fullWindowStart;
+
+    final windowSeconds = now.difference(start).inSeconds.clamp(1, 300);
+    final startLabel = windowSeconds < 60
+        ? '-${windowSeconds}s'
+        : '-${(windowSeconds / 60).round()}min';
+
+    _drawLabels(canvas, chartRect, startLabel, 'Maintenant');
+    _drawLine(canvas, chartRect, start, now, cpuColor, (s) => s.cpuPercent);
+    _drawLine(canvas, chartRect, start, now, ramColor, (s) => s.ramPercent);
     _drawLegend(canvas, size);
   }
 
@@ -71,14 +79,13 @@ class _HistoryLineChartPainter extends CustomPainter {
     canvas.drawRect(rect, paint..style = PaintingStyle.stroke);
   }
 
-  void _drawLabels(Canvas canvas, Rect rect) {
+  void _drawLabels(Canvas canvas, Rect rect, String startLabel, String endLabel) {
     for (final value in [0, 50, 100]) {
       final y = rect.bottom - rect.height * value / 100;
       _drawText(canvas, '$value%', Offset(0, y - 7), 11);
     }
-    _drawText(canvas, '-5 min', Offset(rect.left, rect.bottom + 8), 11);
-    _drawText(
-        canvas, 'Maintenant', Offset(rect.right - 58, rect.bottom + 8), 11);
+    _drawText(canvas, startLabel, Offset(rect.left, rect.bottom + 8), 11);
+    _drawText(canvas, endLabel, Offset(rect.right - 58, rect.bottom + 8), 11);
   }
 
   void _drawLine(
@@ -96,6 +103,7 @@ class _HistoryLineChartPainter extends CustomPainter {
     var hasPoint = false;
     for (final sample in samples) {
       final elapsedMs = sample.timestamp.difference(start).inMilliseconds;
+      if (elapsedMs < 0) continue;
       final x = rect.left + rect.width * elapsedMs.clamp(0, totalMs) / totalMs;
       final value = valueOf(sample).clamp(0.0, 100.0);
       final y = rect.bottom - rect.height * value / 100;
