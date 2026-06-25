@@ -1,6 +1,7 @@
 class AppConfig {
   final String templatesDir;
   final String snapshotsDir;
+  final String defaultInstallDir;
   final int monitoringIntervalSeconds;
   final String theme;
   final String locale;
@@ -14,6 +15,7 @@ class AppConfig {
   const AppConfig({
     required this.templatesDir,
     required this.snapshotsDir,
+    this.defaultInstallDir = r'C:\WSL',
     this.monitoringIntervalSeconds = 5,
     this.theme = 'system',
     this.locale = 'system',
@@ -28,6 +30,8 @@ class AppConfig {
   factory AppConfig.fromJson(Map<String, dynamic> json) => AppConfig(
         templatesDir: json['templates_dir'] as String,
         snapshotsDir: json['snapshots_dir'] as String,
+        defaultInstallDir:
+            json['default_install_dir'] as String? ?? r'C:\WSL',
         monitoringIntervalSeconds:
             json['monitoring_interval_seconds'] as int? ?? 5,
         theme: json['theme'] as String? ?? 'system',
@@ -45,6 +49,7 @@ class AppConfig {
         'version': 1,
         'templates_dir': templatesDir,
         'snapshots_dir': snapshotsDir,
+        'default_install_dir': defaultInstallDir,
         'monitoring_interval_seconds': monitoringIntervalSeconds,
         'theme': theme,
         'locale': locale,
@@ -59,6 +64,7 @@ class AppConfig {
   AppConfig copyWith({
     String? templatesDir,
     String? snapshotsDir,
+    String? defaultInstallDir,
     int? monitoringIntervalSeconds,
     String? theme,
     String? locale,
@@ -72,6 +78,7 @@ class AppConfig {
       AppConfig(
         templatesDir: templatesDir ?? this.templatesDir,
         snapshotsDir: snapshotsDir ?? this.snapshotsDir,
+        defaultInstallDir: defaultInstallDir ?? this.defaultInstallDir,
         monitoringIntervalSeconds:
             monitoringIntervalSeconds ?? this.monitoringIntervalSeconds,
         theme: theme ?? this.theme,

@@ -6,7 +6,13 @@ import '../create_wizard_screen.dart';
 class StepPath extends StatefulWidget {
   final WizardState state;
   final ValueChanged<WizardState> onChanged;
-  const StepPath({super.key, required this.state, required this.onChanged});
+  final String defaultInstallBase;
+  const StepPath({
+    super.key,
+    required this.state,
+    required this.onChanged,
+    this.defaultInstallBase = r'C:\WSL',
+  });
 
   @override
   State<StepPath> createState() => _StepPathState();
@@ -19,13 +25,12 @@ class _StepPathState extends State<StepPath> {
   @override
   void initState() {
     super.initState();
-    // Use officialDistroName for web-download mode (instanceName is empty)
     final nameForPath = widget.state.officialDistroName?.isNotEmpty == true
         ? widget.state.officialDistroName!
         : widget.state.instanceName;
     final defaultPath = widget.state.installPath.isNotEmpty
         ? widget.state.installPath
-        : 'C:\\WSL\\$nameForPath';
+        : '${widget.defaultInstallBase}\\$nameForPath';
     _ctrl = TextEditingController(text: defaultPath);
     widget.onChanged(widget.state.copyWith(installPath: defaultPath));
     _checkDiskSpace(defaultPath);
@@ -131,9 +136,8 @@ class _StepPathState extends State<StepPath> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Mode web-download : WSL installe d\'abord la distro à '
-                      'son emplacement par défaut, puis la migre automatiquement '
-                      'vers le dossier choisi ci-dessus.',
+                      'En mode web-download, WSL gère automatiquement '
+                      'l\'emplacement d\'installation.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context)
