@@ -23,6 +23,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _search = '';
   _SortMode _sort = _SortMode.name;
   _StateFilter _stateFilter = _StateFilter.all;
+  bool _filterDocker = false;
+  bool _filterPodman = false;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +59,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 selected: _stateFilter == _StateFilter.stopped,
                 onSelected: (_) =>
                     setState(() => _stateFilter = _StateFilter.stopped),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.hub, size: 14),
+                label: const Text('Docker'),
+                selected: _filterDocker,
+                onSelected: (v) => setState(() => _filterDocker = v),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.inventory_2_outlined, size: 14),
+                label: const Text('Podman'),
+                selected: _filterPodman,
+                onSelected: (v) => setState(() => _filterPodman = v),
               ),
             ],
           ),
@@ -163,13 +177,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 if (!i.name.toLowerCase().contains(_search.toLowerCase())) {
                   return false;
                 }
-                return switch (_stateFilter) {
+                final stateOk = switch (_stateFilter) {
                   _StateFilter.all => true,
-                  _StateFilter.running =>
-                    i.state == WslInstanceState.running,
-                  _StateFilter.stopped =>
-                    i.state == WslInstanceState.stopped,
+                  _StateFilter.running => i.state == WslInstanceState.running,
+                  _StateFilter.stopped => i.state == WslInstanceState.stopped,
                 };
+                if (!stateOk) return false;
+                if (_filterDocker || _filterPodman) {
+                  final matchD = _filterDocker && (i.hasDocker == true);
+                  final matchP = _filterPodman && (i.hasPodman == true);
+                  if (!matchD && !matchP) return false;
+                }
+                return true;
               }).toList()
                 ..sort(_comparator);
 

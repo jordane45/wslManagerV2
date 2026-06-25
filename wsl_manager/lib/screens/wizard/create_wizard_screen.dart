@@ -13,6 +13,7 @@ import 'steps/step_name.dart';
 import 'steps/step_user.dart';
 import 'steps/step_password.dart';
 import 'steps/step_path.dart';
+import 'steps/step_tools.dart';
 import 'steps/step_summary.dart';
 
 class WizardState {
@@ -28,6 +29,10 @@ class WizardState {
   final String password;
   final String installPath;
   final bool useWebDownload;
+  final bool installDocker;
+  final bool installPodman;
+  final String dockerVersion;
+  final String podmanVersion;
 
   const WizardState({
     this.sourceType = SourceType.online,
@@ -42,6 +47,10 @@ class WizardState {
     this.password = '',
     this.installPath = '',
     this.useWebDownload = true,
+    this.installDocker = false,
+    this.installPodman = false,
+    this.dockerVersion = '',
+    this.podmanVersion = '',
   });
 
   WizardState copyWith({
@@ -57,6 +66,10 @@ class WizardState {
     String? password,
     String? installPath,
     bool? useWebDownload,
+    bool? installDocker,
+    bool? installPodman,
+    String? dockerVersion,
+    String? podmanVersion,
   }) {
     return WizardState(
       sourceType: sourceType ?? this.sourceType,
@@ -71,6 +84,10 @@ class WizardState {
       password: password ?? this.password,
       installPath: installPath ?? this.installPath,
       useWebDownload: useWebDownload ?? this.useWebDownload,
+      installDocker: installDocker ?? this.installDocker,
+      installPodman: installPodman ?? this.installPodman,
+      dockerVersion: dockerVersion ?? this.dockerVersion,
+      podmanVersion: podmanVersion ?? this.podmanVersion,
     );
   }
 }
@@ -94,6 +111,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
     'Utilisateur',
     'Mot de passe',
     'Emplacement',
+    'Outils',
     'Récapitulatif',
   ];
 
@@ -103,7 +121,6 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
         if (_state.sourceType == SourceType.localFile) return _state.localTarPath?.isNotEmpty ?? false;
         if (_state.sourceType == SourceType.url) return _state.remoteUrl?.isNotEmpty ?? false;
         if (_state.sourceType == SourceType.template) return _state.templateId?.isNotEmpty ?? false;
-        // online
         return _state.useWebDownload
             ? (_state.officialDistroName?.isNotEmpty ?? false)
             : (_state.officialDistroUrl?.isNotEmpty ?? false);
@@ -206,6 +223,11 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
           onChanged: (s) => setState(() => _state = s),
         );
       case 5:
+        return StepTools(
+          state: _state,
+          onChanged: (s) => setState(() => _state = s),
+        );
+      case 6:
         return StepSummary(state: _state);
       default:
         return const SizedBox.shrink();
@@ -231,6 +253,8 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
             ProgressStep('Import WSL...'),
           ],
           ProgressStep('Configuration utilisateur...'),
+          if (s.installDocker) ProgressStep('Installation de Docker...'),
+          if (s.installPodman) ProgressStep('Installation de Podman...'),
           ProgressStep('Finalisation'),
         ],
         task: (update, setProgress) async {
@@ -269,12 +293,28 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
           update(idx, StepStatus.done);
           idx++;
 
+          if (s.installDocker) {
+            update(idx, StepStatus.running);
+            await WslService.instance.installDockerInInstance(effectiveName, s.username);
+            update(idx, StepStatus.done);
+            idx++;
+          }
+
+          if (s.installPodman) {
+            update(idx, StepStatus.running);
+            await WslService.instance.installPodmanInInstance(effectiveName, s.username);
+            update(idx, StepStatus.done);
+            idx++;
+          }
+
           update(idx, StepStatus.running);
-          if (s.description.trim().isNotEmpty) {
-            await InstanceMetadataService.instance.save(
-              effectiveName,
-              InstanceMetadata(description: s.description.trim()),
-            );
+          final meta = InstanceMetadata(
+            description: s.description.trim(),
+            hasDocker: s.installDocker ? true : null,
+            hasPodman: s.installPodman ? true : null,
+          );
+          if (s.description.trim().isNotEmpty || s.installDocker || s.installPodman) {
+            await InstanceMetadataService.instance.save(effectiveName, meta);
             InstanceMetadataService.instance.invalidate();
           }
           await ref.read(instancesProvider.notifier).refresh();
