@@ -453,14 +453,23 @@ class WslService {
   Future<({bool hasDocker, bool hasPodman})> detectInstalledTools(
       String instanceName) async {
     try {
+      // Use package manager to detect installation, not PATH.
+      // `command -v docker` gives false positives when Docker Desktop for
+      // Windows injects a docker CLI wrapper into every WSL instance PATH.
+      const script =
+          r'docker=0; podman=0;'
+          r' if command -v dpkg >/dev/null 2>&1; then'
+          r'  dpkg -s docker-ce >/dev/null 2>&1 && docker=1 || true;'
+          r'  dpkg -s docker.io >/dev/null 2>&1 && docker=1 || true;'
+          r'  dpkg -s podman    >/dev/null 2>&1 && podman=1 || true;'
+          r' elif command -v rpm >/dev/null 2>&1; then'
+          r'  rpm -q docker-ce >/dev/null 2>&1 && docker=1 || true;'
+          r'  rpm -q podman    >/dev/null 2>&1 && podman=1 || true;'
+          r' fi;'
+          r' echo "docker=$docker"; echo "podman=$podman"';
       final result = await Process.run(
         'wsl',
-        [
-          '-d', instanceName, '--',
-          'sh', '-c',
-          r'echo "docker=$(command -v docker >/dev/null 2>&1 && echo 1 || echo 0)";'
-          r'echo "podman=$(command -v podman >/dev/null 2>&1 && echo 1 || echo 0)"',
-        ],
+        ['-d', instanceName, '--', 'sh', '-c', script],
         runInShell: false,
         stdoutEncoding: null,
         stderrEncoding: null,
