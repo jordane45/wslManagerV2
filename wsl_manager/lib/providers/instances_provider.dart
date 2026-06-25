@@ -1,14 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/wsl_instance.dart';
+import '../services/instance_metadata_service.dart';
 import '../services/wsl_service.dart';
 
 class InstancesNotifier extends AsyncNotifier<List<WslInstance>> {
   @override
-  Future<List<WslInstance>> build() => WslService.instance.listInstances();
+  Future<List<WslInstance>> build() => _load();
+
+  Future<List<WslInstance>> _load() async {
+    final instances = await WslService.instance.listInstances();
+    final metadata = await InstanceMetadataService.instance.loadAll();
+    return instances.map((i) {
+      final meta = metadata[i.name];
+      if (meta == null) return i;
+      return i.copyWith(
+        description: meta.description.isEmpty ? null : meta.description,
+        defaultWorkDir: meta.defaultWorkDir.isEmpty ? null : meta.defaultWorkDir,
+      );
+    }).toList();
+  }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(WslService.instance.listInstances);
+    state = await AsyncValue.guard(_load);
   }
 
   Future<void> start(String name) async {
@@ -23,6 +37,7 @@ class InstancesNotifier extends AsyncNotifier<List<WslInstance>> {
 
   Future<void> delete(String name) async {
     await WslService.instance.deleteInstance(name);
+    await InstanceMetadataService.instance.delete(name);
     await refresh();
   }
 

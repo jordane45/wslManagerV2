@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../models/snapshot.dart';
@@ -76,7 +76,7 @@ class SnapshotsTab extends ConsumerWidget {
               child: const Text('Annuler')),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-              child: const Text('CrÃ©er')),
+              child: const Text('Créer')),
         ],
       ),
     );
@@ -85,7 +85,7 @@ class SnapshotsTab extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'CrÃ©ation du snapshot',
+        title: 'Création du snapshot',
         steps: [
           ProgressStep('Export en cours...'),
           ProgressStep('Enregistrement'),
@@ -107,7 +107,7 @@ class SnapshotsTab extends ConsumerWidget {
     final confirmed = await showConfirmDialog(context,
         title: 'Restaurer le snapshot',
         message:
-            'L\'instance "$instanceName" sera remplacÃ©e par ce snapshot. Cette action est irrÃ©versible.',
+            'L\'instance "$instanceName" sera remplacée par ce snapshot. Cette action est irréversible.',
         confirmLabel: 'Restaurer',
         destructive: true);
     if (!confirmed || !context.mounted) return;
@@ -119,7 +119,7 @@ class SnapshotsTab extends ConsumerWidget {
         steps: [
           ProgressStep('Suppression de l\'instance actuelle...'),
           ProgressStep('Importation du snapshot...'),
-          ProgressStep('RafraÃ®chissement'),
+          ProgressStep('Rafraîchissement'),
         ],
         task: (update, _) async {
           update(0, StepStatus.running);
@@ -141,7 +141,7 @@ class SnapshotsTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, WslSnapshot snapshot) async {
     final confirmed = await showConfirmDialog(context,
         title: 'Supprimer le snapshot',
-        message: 'Supprimer "${snapshot.name}" ? Cette action est irrÃ©versible.',
+        message: 'Supprimer "${snapshot.name}" ? Cette action est irréversible.',
         confirmLabel: 'Supprimer',
         destructive: true);
     if (!confirmed) return;

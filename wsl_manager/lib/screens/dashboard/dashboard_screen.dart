@@ -22,6 +22,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _search = '';
   _SortMode _sort = _SortMode.name;
+  _StateFilter _stateFilter = _StateFilter.all;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const UacBanner(),
         const GlobalStatsBar(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Wrap(
+            spacing: 8,
+            children: [
+              FilterChip(
+                label: const Text('Toutes'),
+                selected: _stateFilter == _StateFilter.all,
+                onSelected: (_) =>
+                    setState(() => _stateFilter = _StateFilter.all),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.circle, size: 10, color: Color(0xFF22C55E)),
+                label: const Text('Démarrées'),
+                selected: _stateFilter == _StateFilter.running,
+                onSelected: (_) =>
+                    setState(() => _stateFilter = _StateFilter.running),
+              ),
+              FilterChip(
+                avatar: const Icon(Icons.circle, size: 10, color: Colors.grey),
+                label: const Text('Arrêtées'),
+                selected: _stateFilter == _StateFilter.stopped,
+                onSelected: (_) =>
+                    setState(() => _stateFilter = _StateFilter.stopped),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final searchField = TextField(
@@ -130,10 +159,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             data: (list) {
               final groupsState =
                   groups.valueOrNull ?? InstanceGroupsState.empty();
-              final filtered = list
-                  .where((i) =>
-                      i.name.toLowerCase().contains(_search.toLowerCase()))
-                  .toList()
+              final filtered = list.where((i) {
+                if (!i.name.toLowerCase().contains(_search.toLowerCase())) {
+                  return false;
+                }
+                return switch (_stateFilter) {
+                  _StateFilter.all => true,
+                  _StateFilter.running =>
+                    i.state == WslInstanceState.running,
+                  _StateFilter.stopped =>
+                    i.state == WslInstanceState.stopped,
+                };
+              }).toList()
                 ..sort(_comparator);
 
               if (filtered.isEmpty) {
@@ -530,3 +567,5 @@ class _GroupSection extends StatelessWidget {
 enum _GroupAction { rename, delete, moveUp, moveDown }
 
 enum _SortMode { name, state, version }
+
+enum _StateFilter { all, running, stopped }
