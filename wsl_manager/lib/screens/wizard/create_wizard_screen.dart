@@ -133,9 +133,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
       case 3:
         return _state.password.length >= 8;
       case 4:
-        return _state.useWebDownload && _state.sourceType == SourceType.online
-            ? true
-            : _state.installPath.isNotEmpty;
+        return _state.installPath.isNotEmpty;
       default:
         return true;
     }
@@ -245,9 +243,10 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
       builder: (_) => ProgressDialog(
         title: 'Création de l\'instance',
         steps: [
-          if (webDownload)
-            ProgressStep('Installation via WSL (--web-download)...')
-          else ...[
+          if (webDownload) ...[
+            ProgressStep('Installation via WSL (--web-download)...'),
+            ProgressStep('Migration vers l\'emplacement personnalisé...'),
+          ] else ...[
             if (s.sourceType == SourceType.online || s.sourceType == SourceType.url)
               ProgressStep('Téléchargement...'),
             ProgressStep('Import WSL...'),
@@ -265,6 +264,14 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
             await WslService.instance.installDistroWebDownload(
               s.officialDistroName!,
               onProgress: (p) => setProgress(idx, p),
+            );
+            update(idx, StepStatus.done);
+            idx++;
+
+            update(idx, StepStatus.running);
+            await WslService.instance.migrateToPath(
+              s.officialDistroName!,
+              s.installPath,
             );
             update(idx, StepStatus.done);
             idx++;
