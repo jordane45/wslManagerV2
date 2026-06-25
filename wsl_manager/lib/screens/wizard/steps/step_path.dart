@@ -19,9 +19,13 @@ class _StepPathState extends State<StepPath> {
   @override
   void initState() {
     super.initState();
+    // Use officialDistroName for web-download mode (instanceName is empty)
+    final nameForPath = widget.state.officialDistroName?.isNotEmpty == true
+        ? widget.state.officialDistroName!
+        : widget.state.instanceName;
     final defaultPath = widget.state.installPath.isNotEmpty
         ? widget.state.installPath
-        : 'C:\\WSL\\${widget.state.instanceName}';
+        : 'C:\\WSL\\$nameForPath';
     _ctrl = TextEditingController(text: defaultPath);
     widget.onChanged(widget.state.copyWith(installPath: defaultPath));
     _checkDiskSpace(defaultPath);
@@ -58,45 +62,6 @@ class _StepPathState extends State<StepPath> {
   Widget build(BuildContext context) {
     final webDownload =
         widget.state.useWebDownload && widget.state.sourceType.name == 'online';
-
-    if (webDownload) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Emplacement d\'installation',
-                style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'En mode --web-download, WSL gère automatiquement '
-                      'l\'emplacement d\'installation de la distro.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -147,6 +112,40 @@ class _StepPathState extends State<StepPath> {
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
+          if (webDownload) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline,
+                      size: 16,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSecondaryContainer),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Mode web-download : WSL installe d\'abord la distro à '
+                      'son emplacement par défaut, puis la migre automatiquement '
+                      'vers le dossier choisi ci-dessus.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

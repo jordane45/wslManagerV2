@@ -142,6 +142,29 @@ class WslService {
     await _runWsl(['--import', name, installDir, tarPath, '--version', '2']);
   }
 
+  Future<void> migrateToPath(String name, String targetPath) async {
+    final safe = name.replaceAll(RegExp(r'[^\w\-]'), '_');
+    final tmp = '${Directory.systemTemp.path}\\wsl_mig_$safe.tar';
+    // Stop is best-effort: the instance may already be stopped (e.g. --no-launch)
+    try {
+      await stopInstance(name);
+    } on WslCommandException catch (_) {}
+    await exportInstance(name, tmp);
+    // Unregister without stopping (already done above)
+    final unregArgs = ['--unregister', name];
+    final logEntry = CommandLogService.instance.start('wsl', unregArgs);
+    final unregResult = await Process.run('wsl', unregArgs, runInShell: true);
+    CommandLogService.instance.finish(logEntry, unregResult);
+    if (unregResult.exitCode != 0) {
+      throw WslCommandException(
+          unregArgs, unregResult.exitCode, _resultOutput(unregResult));
+    }
+    await importInstance(name, targetPath, tmp);
+    try {
+      await File(tmp).delete();
+    } catch (_) {}
+  }
+
   Future<void> renameInstance(
     String oldName,
     String newName,
