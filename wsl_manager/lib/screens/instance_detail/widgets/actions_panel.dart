@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -325,7 +326,8 @@ class ActionsPanel extends ConsumerWidget {
     if (newName == null || !context.mounted) return;
     if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
     if (!context.mounted) return;
-    final installDir = 'C:\\WSL\\$newName';
+    final installDir = await _showInstallDirDialog(context, 'C:\\WSL\\$newName');
+    if (installDir == null || !context.mounted) return;
     final tmp = '${Directory.systemTemp.path}\\wsl_dup_${instance.name}.tar';
 
     await showDialog(
@@ -371,7 +373,8 @@ class ActionsPanel extends ConsumerWidget {
     if (newName == null || !context.mounted) return;
     if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
     if (!context.mounted) return;
-    final installDir = 'C:\\WSL\\$newName';
+    final installDir = await _showInstallDirDialog(context, 'C:\\WSL\\$newName');
+    if (installDir == null || !context.mounted) return;
     final tmp = '${Directory.systemTemp.path}\\wsl_rename_${instance.name}.tar';
     final oldName = instance.name;
 
@@ -515,6 +518,86 @@ class ActionsPanel extends ConsumerWidget {
     if (!confirmed || !context.mounted) return;
     await ref.read(instancesProvider.notifier).delete(instance.name);
     if (context.mounted) Navigator.of(context).pop();
+  }
+
+  Future<String?> _showInstallDirDialog(
+      BuildContext context, String defaultPath) async {
+    final ctrl = TextEditingController(text: defaultPath);
+    String current = defaultPath;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocalState) => AlertDialog(
+          title: const Text('Dossier d\'installation'),
+          content: SizedBox(
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choisissez le dossier où sera stockée l\'image disque (ext4.vhdx).',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: ctrl,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Chemin d\'installation',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (v) => setLocalState(() => current = v),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.folder_open, size: 16),
+                      label: const Text('Parcourir'),
+                      onPressed: () async {
+                        final picked =
+                            await FilePicker.platform.getDirectoryPath(
+                          dialogTitle: 'Choisir le dossier d\'installation',
+                        );
+                        if (picked != null) {
+                          ctrl.text = picked;
+                          setLocalState(() => current = picked);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Le dossier sera créé automatiquement s\'il n\'existe pas.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, current.trim()),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+    if (result == null || result.isEmpty) return null;
+    return result;
   }
 
   Future<String?> _showNameDialog(BuildContext context, String hint) async {
