@@ -87,6 +87,15 @@ class _InfoPanelState extends ConsumerState<InfoPanel> {
             onRefresh: _loadDiskInfo,
           ),
         ),
+        if (widget.instance.hasDocker == true || widget.instance.hasPodman == true) ...[
+          const SizedBox(height: 16),
+          _InfoSection(title: 'Outils installés', rows: [
+            if (widget.instance.hasDocker == true)
+              const _InfoRow('Docker', 'Installé'),
+            if (widget.instance.hasPodman == true)
+              const _InfoRow('Podman', 'Installé'),
+          ]),
+        ],
         const SizedBox(height: 16),
         _InfoSection(
           title: 'Réseau',

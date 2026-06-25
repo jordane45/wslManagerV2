@@ -8,9 +8,9 @@
     - Prévoir un bouton "parcourir" qui permet d'atteindre l'emplacement du fichier sur le disque dur dans l'explorateur de fichiers windows.
 - [x] Ajouter une fonction de filtrage sur les instances démarrées / arrêtées pour faciliter la navigation quand on a beaucoup d'instances
 - [x] Pouvoir paramétrer le dossier de démarrage par défaut d'une instance lorsqu'on l'ouvre dans vscode ou le terminal
-- [] Lors du renommage ou la sauvegarde ou la duplication d'une instance, vérifie avant de lancer le traitement si l'espace disque est suffisant.
-- [] Lors de la création d'une instance, prévoir une option permettant d'indiquer si l'on souhaite que soit installé automatiquement docker ou podman, avec la possibilité de choisir la version spécifique à installer. Prévoir un script d'installation qui configure correctement les permissions et ajoute l'utilisateur au groupe approprié pour éviter d'avoir à utiliser sudo pour les commandes docker/podman.
-- [] Si docker ou Podman installé sur une instance, ajouter un Tag/label dans le détail de l'instance (et visible sur le dashboard)
-- [] Pouvoir filtrer sur ce Tag dans le dashboard.
-- [] Ajouter une fonction d'optimisation/nettoyage des instances pour libérer de l'espace disque : suppression des fichiers temporaires, vidage des caches apt/yum, nettoyage des logs anciens. Afficher l'espace potentiellement récupérable avant d'exécuter le nettoyage. 
+- [x] Lors du renommage ou la sauvegarde ou la duplication d'une instance, vérifie avant de lancer le traitement si l'espace disque est suffisant.
+- [x] Lors de la création d'une instance, prévoir une option permettant d'indiquer si l'on souhaite que soit installé automatiquement docker ou podman, avec la possibilité de choisir la version spécifique à installer. Prévoir un script d'installation qui configure correctement les permissions et ajoute l'utilisateur au groupe approprié pour éviter d'avoir à utiliser sudo pour les commandes docker/podman.
+- [x] Si docker ou Podman installé sur une instance, ajouter un Tag/label dans le détail de l'instance (et visible sur le dashboard)
+- [x] Pouvoir filtrer sur ce Tag dans le dashboard.
+- [x] Ajouter une fonction d'optimisation/nettoyage des instances pour libérer de l'espace disque : suppression des fichiers temporaires, vidage des caches apt/yum, nettoyage des logs anciens. Afficher l'espace potentiellement récupérable avant d'exécuter le nettoyage.
   

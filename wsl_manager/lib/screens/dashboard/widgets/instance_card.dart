@@ -84,6 +84,14 @@ class _WideContent extends StatelessWidget {
                     const SizedBox(width: 6),
                     _DefaultBadge(),
                   ],
+                  if (instance.hasDocker == true) ...[
+                    const SizedBox(width: 6),
+                    _ToolBadge.docker(),
+                  ],
+                  if (instance.hasPodman == true) ...[
+                    const SizedBox(width: 6),
+                    _ToolBadge.podman(),
+                  ],
                 ],
               ),
               if (instance.state == WslInstanceState.running &&
@@ -153,6 +161,8 @@ class _CompactContent extends StatelessWidget {
               StatusBadge(state: instance.state),
               _VersionBadge(version: instance.version),
               if (instance.isDefault) _DefaultBadge(),
+              if (instance.hasDocker == true) _ToolBadge.docker(),
+              if (instance.hasPodman == true) _ToolBadge.podman(),
             ],
           ),
           const Spacer(),
@@ -254,6 +264,48 @@ class _DefaultBadge extends StatelessWidget {
           fontSize: 10,
           color: Theme.of(context).colorScheme.onPrimaryContainer,
         ),
+      ),
+    );
+  }
+}
+
+class _ToolBadge extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  const _ToolBadge({required this.label, required this.icon, required this.color});
+
+  factory _ToolBadge.docker() => const _ToolBadge(
+        label: 'Docker',
+        icon: Icons.hub,
+        color: Color(0xFF1D63ED),
+      );
+
+  factory _ToolBadge.podman() => const _ToolBadge(
+        label: 'Podman',
+        icon: Icons.inventory_2_outlined,
+        color: Color(0xFF892CA0),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(30),
+        border: Border.all(color: color.withAlpha(120)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 3),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+        ],
       ),
     );
   }

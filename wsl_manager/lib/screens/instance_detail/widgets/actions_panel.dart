@@ -11,6 +11,7 @@ import '../../../services/instance_metadata_service.dart';
 import '../../../services/snapshot_service.dart';
 import '../../../services/template_service.dart';
 import '../../../services/wsl_service.dart';
+import '../../../widgets/cleanup_dialog.dart';
 import '../../../widgets/confirm_dialog.dart';
 import '../../../widgets/progress_dialog.dart';
 
@@ -129,6 +130,15 @@ class ActionsPanel extends ConsumerWidget {
           ),
         ]),
         const SizedBox(height: 16),
+        _ActionSection(title: 'Maintenance', actions: [
+          _ActionTile(
+            icon: Icons.cleaning_services_outlined,
+            label: 'Nettoyer l\'instance',
+            subtitle: 'Libère cache apt, /tmp, logs rotatés',
+            onTap: () => _cleanup(context),
+          ),
+        ]),
+        const SizedBox(height: 16),
         _ActionSection(title: 'Zone dangereuse', actions: [
           _ActionTile(
             icon: Icons.delete_forever,
@@ -237,6 +247,8 @@ class ActionsPanel extends ConsumerWidget {
   Future<void> _createTemplate(BuildContext context, WidgetRef ref) async {
     final name = await _showNameDialog(context, 'Nom du template');
     if (name == null || !context.mounted) return;
+    if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
+    if (!context.mounted) return;
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -284,6 +296,8 @@ class ActionsPanel extends ConsumerWidget {
   Future<void> _createSnapshot(BuildContext context, WidgetRef ref) async {
     final name = await _showNameDialog(context, 'Nom du snapshot');
     if (name == null || !context.mounted) return;
+    if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
+    if (!context.mounted) return;
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -309,6 +323,8 @@ class ActionsPanel extends ConsumerWidget {
   Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
     final newName = await _showNameDialog(context, 'Nom de la copie');
     if (newName == null || !context.mounted) return;
+    if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
+    if (!context.mounted) return;
     final installDir = 'C:\\WSL\\$newName';
     final tmp = '${Directory.systemTemp.path}\\wsl_dup_${instance.name}.tar';
 
@@ -353,6 +369,8 @@ class ActionsPanel extends ConsumerWidget {
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
     final newName = await _showNameDialog(context, 'Nouveau nom');
     if (newName == null || !context.mounted) return;
+    if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
+    if (!context.mounted) return;
     final installDir = 'C:\\WSL\\$newName';
     final tmp = '${Directory.systemTemp.path}\\wsl_rename_${instance.name}.tar';
     final oldName = instance.name;
@@ -434,6 +452,61 @@ class ActionsPanel extends ConsumerWidget {
       ),
     );
     ctrl.dispose();
+  }
+
+  Future<void> _cleanup(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (_) => CleanupDialog(instanceName: instance.name),
+    );
+  }
+
+  // Returns false if the user cancelled after a low-disk warning.
+  Future<bool> _checkDiskSpace(BuildContext context, int? neededBytes) async {
+    if (neededBytes == null || neededBytes <= 0) return true;
+    final info = await WslService.instance.getInstanceDiskInfo(instance.name);
+    final basePath = info.basePath;
+    if (basePath == null) return true;
+    final free = await WslService.instance.getDriveFreeBytes(basePath);
+    if (free == null) return true;
+    final needed = neededBytes;
+    if (free >= needed * 1.1) return true; // 10% headroom
+
+    if (!context.mounted) return false;
+    final String fmtFree = _fmtBytes(free);
+    final String fmtNeeded = _fmtBytes(needed);
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Espace disque insuffisant'),
+        content: Text(
+          'Espace disponible : $fmtFree\n'
+          'Espace estimé nécessaire : $fmtNeeded\n\n'
+          'L\'opération risque d\'échouer. Continuer quand même ?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continuer'),
+          ),
+        ],
+      ),
+    );
+    return proceed ?? false;
+  }
+
+  String _fmtBytes(int bytes) {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} Go';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(0)} Mo';
+    }
+    return '${(bytes / 1024).toStringAsFixed(0)} Ko';
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {

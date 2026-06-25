@@ -16,6 +16,8 @@ class WslInstance {
   String? defaultWorkDir;
   String? vhdxPath;
   int? diskSizeBytes;
+  bool? hasDocker;
+  bool? hasPodman;
 
   WslInstance({
     required this.name,
@@ -31,6 +33,8 @@ class WslInstance {
     this.defaultWorkDir,
     this.vhdxPath,
     this.diskSizeBytes,
+    this.hasDocker,
+    this.hasPodman,
   });
 
   WslInstance copyWith({
@@ -45,6 +49,8 @@ class WslInstance {
     String? defaultWorkDir,
     String? vhdxPath,
     int? diskSizeBytes,
+    bool? hasDocker,
+    bool? hasPodman,
     bool clearDescription = false,
     bool clearDefaultWorkDir = false,
   }) {
@@ -62,6 +68,8 @@ class WslInstance {
       defaultWorkDir: clearDefaultWorkDir ? null : (defaultWorkDir ?? this.defaultWorkDir),
       vhdxPath: vhdxPath ?? this.vhdxPath,
       diskSizeBytes: diskSizeBytes ?? this.diskSizeBytes,
+      hasDocker: hasDocker ?? this.hasDocker,
+      hasPodman: hasPodman ?? this.hasPodman,
     );
   }
 }

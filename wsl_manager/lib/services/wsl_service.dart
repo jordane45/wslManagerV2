@@ -406,6 +406,155 @@ class WslService {
     }
   }
 
+  Future<int?> getDriveFreeBytes(String windowsPath) async {
+    if (windowsPath.isEmpty) return null;
+    final drive = windowsPath[0].toUpperCase();
+    if (!RegExp(r'[A-Z]').hasMatch(drive)) return null;
+    try {
+      final result = await Process.run(
+        'powershell',
+        [
+          '-NoProfile', '-NonInteractive', '-Command',
+          "[System.IO.DriveInfo]::new('$drive').AvailableFreeSpace",
+        ],
+        runInShell: false,
+      );
+      return int.tryParse(result.stdout.toString().trim());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<({bool hasDocker, bool hasPodman})> detectInstalledTools(
+      String instanceName) async {
+    try {
+      final result = await Process.run(
+        'wsl',
+        [
+          '-d', instanceName, '--',
+          'sh', '-c',
+          r'echo "docker=$(command -v docker >/dev/null 2>&1 && echo 1 || echo 0)";'
+          r'echo "podman=$(command -v podman >/dev/null 2>&1 && echo 1 || echo 0)"',
+        ],
+        runInShell: false,
+        stdoutEncoding: null,
+        stderrEncoding: null,
+      );
+      final out = _decodeProcessOutput(result.stdout);
+      final docker = RegExp(r'docker=1').hasMatch(out);
+      final podman = RegExp(r'podman=1').hasMatch(out);
+      return (hasDocker: docker, hasPodman: podman);
+    } catch (_) {
+      return (hasDocker: false, hasPodman: false);
+    }
+  }
+
+  Future<void> installDockerInInstance(
+      String instanceName, String username) async {
+    const script = r'''
+set -e
+apt-get update -qq
+apt-get install -y -qq ca-certificates curl gnupg lsb-release
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/$(. /etc/os-release && echo "$ID")/gpg \
+  | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/$(. /etc/os-release && echo "$ID") \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update -qq
+apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+usermod -aG docker TARGET_USER
+''';
+    final cmd = script.replaceAll('TARGET_USER', username);
+    final args = ['-d', instanceName, '-u', 'root', '--', 'bash', '-c', cmd];
+    final logEntry = CommandLogService.instance.start('wsl', args);
+    final process = await Process.start('wsl', args, runInShell: false);
+    final stdoutBuf = StringBuffer();
+    final stderrBuf = StringBuffer();
+    process.stdout.listen((c) => stdoutBuf.write(_decodeProcessOutput(c)));
+    process.stderr.listen((c) => stderrBuf.write(_decodeProcessOutput(c)));
+    final exitCode = await process.exitCode;
+    CommandLogService.instance.finish(
+      logEntry,
+      ProcessResult(process.pid, exitCode, stdoutBuf.toString(), stderrBuf.toString()),
+    );
+    if (exitCode != 0) {
+      throw WslCommandException(
+          args, exitCode, stderrBuf.isNotEmpty ? stderrBuf.toString() : stdoutBuf.toString());
+    }
+  }
+
+  Future<void> installPodmanInInstance(
+      String instanceName, String username) async {
+    const script = r'''
+set -e
+apt-get update -qq
+apt-get install -y -qq podman
+usermod -aG podman TARGET_USER 2>/dev/null || true
+mkdir -p /etc/containers
+grep -q 'unqualified-search-registries' /etc/containers/registries.conf 2>/dev/null \
+  || echo 'unqualified-search-registries = ["docker.io"]' >> /etc/containers/registries.conf
+''';
+    final cmd = script.replaceAll('TARGET_USER', username);
+    final args = ['-d', instanceName, '-u', 'root', '--', 'bash', '-c', cmd];
+    final logEntry = CommandLogService.instance.start('wsl', args);
+    final process = await Process.start('wsl', args, runInShell: false);
+    final stdoutBuf = StringBuffer();
+    final stderrBuf = StringBuffer();
+    process.stdout.listen((c) => stdoutBuf.write(_decodeProcessOutput(c)));
+    process.stderr.listen((c) => stderrBuf.write(_decodeProcessOutput(c)));
+    final exitCode = await process.exitCode;
+    CommandLogService.instance.finish(
+      logEntry,
+      ProcessResult(process.pid, exitCode, stdoutBuf.toString(), stderrBuf.toString()),
+    );
+    if (exitCode != 0) {
+      throw WslCommandException(
+          args, exitCode, stderrBuf.isNotEmpty ? stderrBuf.toString() : stdoutBuf.toString());
+    }
+  }
+
+  Future<({int aptCacheBytes, int tmpBytes, int logBytes, int total})>
+      estimateCleanup(String instanceName) async {
+    try {
+      final result = await Process.run(
+        'wsl',
+        [
+          '-d', instanceName, '--',
+          'sh', '-c',
+          r'apt_size=$(du -sb /var/cache/apt/archives 2>/dev/null | cut -f1 || echo 0);'
+          r'tmp_size=$(du -sb /tmp 2>/dev/null | cut -f1 || echo 0);'
+          r'log_size=$(find /var/log -type f -name "*.gz" -o -name "*.1" 2>/dev/null | xargs du -sb 2>/dev/null | awk "{s+=\$1} END {print s+0}");'
+          r'echo "apt=$apt_size tmp=$tmp_size log=$log_size"',
+        ],
+        runInShell: false,
+        stdoutEncoding: null,
+        stderrEncoding: null,
+      );
+      final out = _decodeProcessOutput(result.stdout).trim();
+      int parseSize(String key) {
+        final m = RegExp('$key=(\\d+)').firstMatch(out);
+        return int.tryParse(m?.group(1) ?? '0') ?? 0;
+      }
+      final apt = parseSize('apt');
+      final tmp = parseSize('tmp');
+      final log = parseSize('log');
+      return (aptCacheBytes: apt, tmpBytes: tmp, logBytes: log, total: apt + tmp + log);
+    } catch (_) {
+      return (aptCacheBytes: 0, tmpBytes: 0, logBytes: 0, total: 0);
+    }
+  }
+
+  Future<void> runCleanup(String instanceName) async {
+    const script = 'apt-get clean -y 2>/dev/null || true;'
+        'rm -rf /tmp/* 2>/dev/null || true;'
+        'find /var/log -type f \\( -name "*.gz" -o -name "*.1" \\) -delete 2>/dev/null || true;'
+        'apt-get autoremove -y 2>/dev/null || true';
+    await _runWsl(['-d', instanceName, '-u', 'root', '--', 'sh', '-c', script]);
+  }
+
   Future<({String? basePath, String? vhdxPath, int? sizeBytes})>
       getInstanceDiskInfo(String instanceName) async {
     if (!RegExp(r"^[\w\-\.]+$").hasMatch(instanceName)) {
