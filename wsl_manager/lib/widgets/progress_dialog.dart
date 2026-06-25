@@ -42,7 +42,7 @@ class _ProgressDialogState extends State<ProgressDialog> {
   late List<ProgressStep> _steps;
   bool _done = false;
   bool _hasError = false;
-  bool _showLog = false;
+  bool _showLog = true;
 
   final List<String> _logLines = [];
   final ScrollController _logScroll = ScrollController();

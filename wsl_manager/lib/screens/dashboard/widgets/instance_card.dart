@@ -92,6 +92,8 @@ class _WideContent extends StatelessWidget {
                     const SizedBox(width: 6),
                     _ToolBadge.podman(),
                   ],
+                  const SizedBox(width: 6),
+                  _InfoTooltip(instance: instance),
                 ],
               ),
               if (instance.state == WslInstanceState.running &&
@@ -150,6 +152,7 @@ class _CompactContent extends StatelessWidget {
                       ),
                 ),
               ),
+              _InfoTooltip(instance: instance),
               _QuickActions(instance: instance, ref: ref),
             ],
           ),
@@ -423,6 +426,45 @@ class _QuickActions extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class _InfoTooltip extends StatelessWidget {
+  final WslInstance instance;
+  const _InfoTooltip({required this.instance});
+
+  String get _message {
+    final parts = <String>[];
+    final desc = instance.description;
+    if (desc != null && desc.isNotEmpty) parts.add(desc);
+    final size = instance.diskSizeBytes;
+    parts.add('Taille : ${size != null ? _fmt(size) : '—'}');
+    return parts.join('\n');
+  }
+
+  String _fmt(int bytes) {
+    if (bytes >= 1073741824) {
+      return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
+    }
+    if (bytes >= 1048576) {
+      return '${(bytes / 1048576).toStringAsFixed(0)} MB';
+    }
+    return '$bytes B';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: _message,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Icon(
+          Icons.info_outline,
+          size: 15,
+          color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(160),
+        ),
+      ),
     );
   }
 }

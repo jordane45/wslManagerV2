@@ -266,6 +266,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
             update(idx, StepStatus.running);
             await WslService.instance.installDistroWebDownload(
               s.officialDistroName!,
+              installPath: s.installPath.isNotEmpty ? s.installPath : null,
               onProgress: (p) => setProgress(idx, p),
             );
             update(idx, StepStatus.done);

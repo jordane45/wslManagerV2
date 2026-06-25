@@ -40,14 +40,24 @@ class InstancesNotifier extends AsyncNotifier<List<WslInstance>> {
       }
     }
 
+    final diskInfoList = await Future.wait(
+      instances.map((i) => WslService.instance.getInstanceDiskInfo(i.name)),
+    );
+    final diskMap = {
+      for (var k = 0; k < instances.length; k++)
+        instances[k].name: diskInfoList[k],
+    };
+
     return instances.map((i) {
       final meta = metadata[i.name];
-      if (meta == null) return i;
+      final disk = diskMap[i.name];
       return i.copyWith(
-        description: meta.description.isEmpty ? null : meta.description,
-        defaultWorkDir: meta.defaultWorkDir.isEmpty ? null : meta.defaultWorkDir,
-        hasDocker: meta.hasDocker,
-        hasPodman: meta.hasPodman,
+        description: meta == null || meta.description.isEmpty ? null : meta.description,
+        defaultWorkDir: meta == null || meta.defaultWorkDir.isEmpty ? null : meta.defaultWorkDir,
+        hasDocker: meta?.hasDocker,
+        hasPodman: meta?.hasPodman,
+        vhdxPath: disk?.vhdxPath,
+        diskSizeBytes: disk?.sizeBytes,
       );
     }).toList();
   }
