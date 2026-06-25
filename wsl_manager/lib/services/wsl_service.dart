@@ -94,12 +94,14 @@ class WslService {
 
   Future<void> installDistroWebDownload(
     String wslName, {
+    String? installPath,
     void Function(double?)? onProgress,
   }) async {
     final args = [
       '--install', wslName,
       '--web-download',
       '--no-launch',
+      if (installPath != null && installPath.isNotEmpty) ...['--install-location', installPath],
     ];
     final logEntry = CommandLogService.instance.start('wsl.exe', args);
     final process = await Process.start('wsl.exe', args, runInShell: false);

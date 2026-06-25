@@ -45,6 +45,23 @@ class StepSummary extends StatelessWidget {
                   _Row('Chemin d\'installation', state.installPath),
                 if (webDownload)
                   const _Row('Emplacement', 'Géré automatiquement par WSL'),
+                if (state.installDocker || state.installPodman) ...[
+                  const Divider(height: 16),
+                  if (state.installDocker)
+                    _Row(
+                      'Docker',
+                      state.dockerVersion.isEmpty
+                          ? 'Dernière version'
+                          : 'v${state.dockerVersion}',
+                    ),
+                  if (state.installPodman)
+                    _Row(
+                      'Podman',
+                      state.podmanVersion.isEmpty
+                          ? 'Dernière version'
+                          : 'v${state.podmanVersion}',
+                    ),
+                ],
               ],
             ),
           ),
