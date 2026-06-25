@@ -12,6 +12,10 @@ class WslInstance {
   int? ramUsedMb;
   int? ramTotalMb;
   String? ipAddress;
+  String? description;
+  String? defaultWorkDir;
+  String? vhdxPath;
+  int? diskSizeBytes;
 
   WslInstance({
     required this.name,
@@ -23,6 +27,10 @@ class WslInstance {
     this.ramUsedMb,
     this.ramTotalMb,
     this.ipAddress,
+    this.description,
+    this.defaultWorkDir,
+    this.vhdxPath,
+    this.diskSizeBytes,
   });
 
   WslInstance copyWith({
@@ -33,6 +41,12 @@ class WslInstance {
     int? ramUsedMb,
     int? ramTotalMb,
     String? ipAddress,
+    String? description,
+    String? defaultWorkDir,
+    String? vhdxPath,
+    int? diskSizeBytes,
+    bool clearDescription = false,
+    bool clearDefaultWorkDir = false,
   }) {
     return WslInstance(
       name: name,
@@ -44,6 +58,10 @@ class WslInstance {
       ramUsedMb: ramUsedMb ?? this.ramUsedMb,
       ramTotalMb: ramTotalMb ?? this.ramTotalMb,
       ipAddress: ipAddress ?? this.ipAddress,
+      description: clearDescription ? null : (description ?? this.description),
+      defaultWorkDir: clearDefaultWorkDir ? null : (defaultWorkDir ?? this.defaultWorkDir),
+      vhdxPath: vhdxPath ?? this.vhdxPath,
+      diskSizeBytes: diskSizeBytes ?? this.diskSizeBytes,
     );
   }
 }

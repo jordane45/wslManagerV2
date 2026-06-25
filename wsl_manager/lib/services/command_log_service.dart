@@ -16,6 +16,11 @@ class CommandLogService extends ChangeNotifier {
   static CommandLogService get instance => _instance ??= CommandLogService._();
   CommandLogService._();
 
+  final StreamController<String> _liveLogController =
+      StreamController<String>.broadcast();
+
+  Stream<String> get liveLogStream => _liveLogController.stream;
+
   static const int _maxEntries = 100;
   static const int _maxOutputChars = 60000;
 
@@ -64,6 +69,7 @@ class CommandLogService extends ChangeNotifier {
     _sortAndTrim();
     notifyListeners();
     _schedulePersist();
+    _liveLogController.add('> ${entry.commandLine}');
     return entry;
   }
 
@@ -75,14 +81,23 @@ class CommandLogService extends ChangeNotifier {
   }) {
     final index = _entries.indexWhere((item) => item.id == entry.id);
     if (index < 0) return;
+    final out = _trimOutput(stdout ?? _decode(result.stdout));
+    final err = _trimOutput(stderr ?? _decode(result.stderr));
     _entries[index] = entry.copyWith(
       finishedAt: DateTime.now(),
       exitCode: result.exitCode,
-      stdout: _trimOutput(stdout ?? _decode(result.stdout)),
-      stderr: _trimOutput(stderr ?? _decode(result.stderr)),
+      stdout: out,
+      stderr: err,
     );
     notifyListeners();
     _schedulePersist();
+
+    if (result.exitCode != 0) {
+      _liveLogController.add('  [exit ${result.exitCode}]');
+      if (err.isNotEmpty) _liveLogController.add(err);
+    } else if (out.isNotEmpty) {
+      _liveLogController.add(out);
+    }
   }
 
   void clear() {

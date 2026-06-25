@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../models/instance_metadata.dart';
 import '../../providers/instances_provider.dart';
+import '../../services/instance_metadata_service.dart';
 import '../../services/wsl_service.dart';
 import '../../services/download_service.dart';
 import '../../widgets/custom_title_bar.dart';
@@ -21,6 +23,7 @@ class WizardState {
   final String? remoteUrl;
   final String? templateId;
   final String instanceName;
+  final String description;
   final String username;
   final String password;
   final String installPath;
@@ -34,6 +37,7 @@ class WizardState {
     this.remoteUrl,
     this.templateId,
     this.instanceName = '',
+    this.description = '',
     this.username = '',
     this.password = '',
     this.installPath = '',
@@ -48,6 +52,7 @@ class WizardState {
     String? remoteUrl,
     String? templateId,
     String? instanceName,
+    String? description,
     String? username,
     String? password,
     String? installPath,
@@ -61,6 +66,7 @@ class WizardState {
       remoteUrl: remoteUrl ?? this.remoteUrl,
       templateId: templateId ?? this.templateId,
       instanceName: instanceName ?? this.instanceName,
+      description: description ?? this.description,
       username: username ?? this.username,
       password: password ?? this.password,
       installPath: installPath ?? this.installPath,
@@ -264,6 +270,13 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
           idx++;
 
           update(idx, StepStatus.running);
+          if (s.description.trim().isNotEmpty) {
+            await InstanceMetadataService.instance.save(
+              effectiveName,
+              InstanceMetadata(description: s.description.trim()),
+            );
+            InstanceMetadataService.instance.invalidate();
+          }
           await ref.read(instancesProvider.notifier).refresh();
           update(idx, StepStatus.done);
         },

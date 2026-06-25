@@ -1,12 +1,16 @@
-﻿import 'package:flutter/material.dart';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../models/wsl_instance.dart';
 import '../../../providers/instances_provider.dart';
 import '../../../providers/snapshots_provider.dart';
 import '../../../providers/templates_provider.dart';
-import '../../../services/wsl_service.dart';
+import '../../../services/instance_metadata_service.dart';
 import '../../../services/snapshot_service.dart';
 import '../../../services/template_service.dart';
+import '../../../services/wsl_service.dart';
 import '../../../widgets/confirm_dialog.dart';
 import '../../../widgets/progress_dialog.dart';
 
@@ -21,36 +25,35 @@ class ActionsPanel extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        _ActionSection(title: 'ContrÃ´le', actions: [
+        _ActionSection(title: 'Contrôle', actions: [
           if (!isRunning)
             _ActionTile(
               icon: Icons.play_arrow,
-              label: 'DÃ©marrer',
+              label: 'Démarrer',
               onTap: () => _runInstanceAction(
                 context,
                 () => ref.read(instancesProvider.notifier).start(instance.name),
-                'Instance demarree',
+                'Instance démarrée',
               ),
             ),
           if (isRunning)
             _ActionTile(
               icon: Icons.stop,
-              label: 'ArrÃªter',
+              label: 'Arrêter',
               onTap: () => _runInstanceAction(
                 context,
                 () => ref.read(instancesProvider.notifier).stop(instance.name),
-                'Instance arretee',
+                'Instance arrêtée',
               ),
             ),
           _ActionTile(
             icon: Icons.star_outline,
-            label: 'DÃ©finir comme dÃ©faut',
+            label: 'Définir comme défaut',
             onTap: () => _runInstanceAction(
               context,
-              () => ref
-                  .read(instancesProvider.notifier)
-                  .setDefault(instance.name),
-              'Instance definie par defaut',
+              () =>
+                  ref.read(instancesProvider.notifier).setDefault(instance.name),
+              'Instance définie par défaut',
             ),
           ),
         ]),
@@ -59,12 +62,18 @@ class ActionsPanel extends ConsumerWidget {
           _ActionTile(
             icon: Icons.code,
             label: 'VSCode',
-            onTap: () => WslService.instance.openInVsCode(instance.name),
+            onTap: () => WslService.instance.openInVsCode(
+              instance.name,
+              workDir: instance.defaultWorkDir,
+            ),
           ),
           _ActionTile(
             icon: Icons.terminal,
             label: 'Terminal',
-            onTap: () => WslService.instance.openInTerminal(instance.name),
+            onTap: () => WslService.instance.openInTerminal(
+              instance.name,
+              workDir: instance.defaultWorkDir,
+            ),
           ),
           _ActionTile(
             icon: Icons.folder_open,
@@ -76,17 +85,33 @@ class ActionsPanel extends ConsumerWidget {
         _ActionSection(title: 'Sauvegarde', actions: [
           _ActionTile(
             icon: Icons.layers,
-            label: 'CrÃ©er un template',
+            label: 'Créer un template',
             onTap: () => _createTemplate(context, ref),
           ),
           _ActionTile(
             icon: Icons.camera_alt,
-            label: 'CrÃ©er un snapshot',
+            label: 'Créer un snapshot',
             onTap: () => _createSnapshot(context, ref),
           ),
         ]),
         const SizedBox(height: 16),
         _ActionSection(title: 'Gestion', actions: [
+          _ActionTile(
+            icon: Icons.edit_note,
+            label: 'Modifier la description',
+            subtitle: instance.description?.isNotEmpty == true
+                ? instance.description
+                : null,
+            onTap: () => _editDescription(context, ref),
+          ),
+          _ActionTile(
+            icon: Icons.folder_special,
+            label: 'Dossier de démarrage',
+            subtitle: instance.defaultWorkDir?.isNotEmpty == true
+                ? instance.defaultWorkDir
+                : 'Non configuré',
+            onTap: () => _editWorkDir(context, ref),
+          ),
           _ActionTile(
             icon: Icons.copy,
             label: 'Dupliquer',
@@ -99,7 +124,7 @@ class ActionsPanel extends ConsumerWidget {
           ),
           _ActionTile(
             icon: Icons.lock_reset,
-            label: 'RÃ©initialiser le mot de passe',
+            label: 'Réinitialiser le mot de passe',
             onTap: () => _resetPassword(context),
           ),
         ]),
@@ -116,6 +141,99 @@ class ActionsPanel extends ConsumerWidget {
     );
   }
 
+  Future<void> _editDescription(BuildContext context, WidgetRef ref) async {
+    final current = instance.description ?? '';
+    final ctrl = TextEditingController(text: current);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Description de l\'instance'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Description (optionnelle)',
+            hintText: 'Ex : serveur de dev Node.js 18, usage personnel...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (result == null || !context.mounted) return;
+
+    final meta = await InstanceMetadataService.instance.get(instance.name);
+    await InstanceMetadataService.instance
+        .save(instance.name, meta.copyWith(description: result));
+    InstanceMetadataService.instance.invalidate();
+    await ref.read(instancesProvider.notifier).refresh();
+  }
+
+  Future<void> _editWorkDir(BuildContext context, WidgetRef ref) async {
+    final current = instance.defaultWorkDir ?? '';
+    final ctrl = TextEditingController(text: current);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Dossier de démarrage'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Chemin Linux utilisé à l\'ouverture dans VSCode ou le Terminal.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Chemin (ex: /home/user/projets)',
+                hintText: '/home/user',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          if (current.isNotEmpty)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, ''),
+              child: const Text('Effacer'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (result == null || !context.mounted) return;
+
+    final meta = await InstanceMetadataService.instance.get(instance.name);
+    await InstanceMetadataService.instance
+        .save(instance.name, meta.copyWith(defaultWorkDir: result));
+    InstanceMetadataService.instance.invalidate();
+    await ref.read(instancesProvider.notifier).refresh();
+  }
+
   Future<void> _createTemplate(BuildContext context, WidgetRef ref) async {
     final name = await _showNameDialog(context, 'Nom du template');
     if (name == null || !context.mounted) return;
@@ -123,22 +241,19 @@ class ActionsPanel extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'CrÃ©ation du template',
+        title: 'Création du template',
         steps: [
-          ProgressStep('ArrÃªt temporaire de l\'instance'),
           ProgressStep('Export en cours...'),
           ProgressStep('Enregistrement du template'),
         ],
         task: (update, _) async {
           update(0, StepStatus.running);
-          update(0, StepStatus.done);
-          update(1, StepStatus.running);
           await TemplateService.instance
               .createFromInstance(instance.name, name, '');
-          update(1, StepStatus.done);
-          update(2, StepStatus.running);
+          update(0, StepStatus.done);
+          update(1, StepStatus.running);
           await ref.read(templatesProvider.notifier).refresh();
-          update(2, StepStatus.done);
+          update(1, StepStatus.done);
         },
       ),
     );
@@ -173,7 +288,7 @@ class ActionsPanel extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'CrÃ©ation du snapshot',
+        title: 'Création du snapshot',
         steps: [
           ProgressStep('Export en cours...'),
           ProgressStep('Enregistrement du snapshot'),
@@ -192,33 +307,44 @@ class ActionsPanel extends ConsumerWidget {
   }
 
   Future<void> _duplicate(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showConfirmDialog(context,
-        title: 'Dupliquer l\'instance',
-        message: 'Entrez le nom de la nouvelle instance.',
-        confirmLabel: 'Dupliquer');
-    if (!confirmed || !context.mounted) return;
     final newName = await _showNameDialog(context, 'Nom de la copie');
     if (newName == null || !context.mounted) return;
+    final installDir = 'C:\\WSL\\$newName';
+    final tmp = '${Directory.systemTemp.path}\\wsl_dup_${instance.name}.tar';
+
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'Duplication',
+        title: 'Duplication de ${instance.name}',
         steps: [
-          ProgressStep('Export...'),
+          ProgressStep('Arrêt de l\'instance source...'),
+          ProgressStep('Export en cours...'),
           ProgressStep('Import sous le nouveau nom...'),
           ProgressStep('Nettoyage'),
         ],
-        task: (update, _) async {
+        task: (update, setProgress) async {
           update(0, StepStatus.running);
+          await WslService.instance.stopInstance(instance.name);
           update(0, StepStatus.done);
+
           update(1, StepStatus.running);
-          await WslService.instance
-              .duplicateInstance(instance.name, newName, 'C:\\WSL\\$newName');
+          await WslService.instance.exportInstance(
+            instance.name,
+            tmp,
+            onProgress: (gb) => setProgress(1, gb / 10),
+          );
           update(1, StepStatus.done);
+
           update(2, StepStatus.running);
-          await ref.read(instancesProvider.notifier).refresh();
+          await WslService.instance.importInstance(newName, installDir, tmp);
           update(2, StepStatus.done);
+
+          update(3, StepStatus.running);
+          final tmpFile = File(tmp);
+          if (tmpFile.existsSync()) await tmpFile.delete();
+          await ref.read(instancesProvider.notifier).refresh();
+          update(3, StepStatus.done);
         },
       ),
     );
@@ -227,38 +353,61 @@ class ActionsPanel extends ConsumerWidget {
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
     final newName = await _showNameDialog(context, 'Nouveau nom');
     if (newName == null || !context.mounted) return;
-    await showDialog(
+    final installDir = 'C:\\WSL\\$newName';
+    final tmp = '${Directory.systemTemp.path}\\wsl_rename_${instance.name}.tar';
+    final oldName = instance.name;
+
+    final success = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => ProgressDialog(
-        title: 'Renommage',
+        title: 'Renommage de $oldName',
         steps: [
-          ProgressStep('ArrÃªt...'),
-          ProgressStep('Export...'),
+          ProgressStep('Arrêt de l\'instance...'),
+          ProgressStep('Export en cours...'),
           ProgressStep('Import sous le nouveau nom...'),
-          ProgressStep('Suppression de l\'ancien'),
+          ProgressStep('Suppression de l\'ancienne instance'),
         ],
-        task: (update, _) async {
-          for (var i = 0; i < 4; i++) {
-            update(i, StepStatus.running);
-          }
-          await WslService.instance
-              .renameInstance(instance.name, newName, 'C:\\WSL\\$newName');
-          for (var i = 0; i < 4; i++) {
-            update(i, StepStatus.done);
-          }
+        task: (update, setProgress) async {
+          update(0, StepStatus.running);
+          await WslService.instance.stopInstance(oldName);
+          update(0, StepStatus.done);
+
+          update(1, StepStatus.running);
+          await WslService.instance.exportInstance(
+            oldName,
+            tmp,
+            onProgress: (gb) => setProgress(1, gb / 10),
+          );
+          update(1, StepStatus.done);
+
+          update(2, StepStatus.running);
+          await WslService.instance.importInstance(newName, installDir, tmp);
+          update(2, StepStatus.done);
+
+          update(3, StepStatus.running);
+          await WslService.instance.deleteInstance(oldName);
+          final tmpFile = File(tmp);
+          if (tmpFile.existsSync()) await tmpFile.delete();
+          await InstanceMetadataService.instance.rename(oldName, newName);
+          InstanceMetadataService.instance.invalidate();
           await ref.read(instancesProvider.notifier).refresh();
+          update(3, StepStatus.done);
         },
       ),
     );
+
+    if ((success ?? false) && context.mounted) {
+      context.go('/instance/$newName');
+    }
   }
 
   Future<void> _resetPassword(BuildContext context) async {
-    final controller = TextEditingController();
+    final ctrl = TextEditingController();
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('RÃ©initialiser le mot de passe'),
+        title: const Text('Réinitialiser le mot de passe'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -266,7 +415,7 @@ class ActionsPanel extends ConsumerWidget {
                 'Entrez le nom d\'utilisateur et le nouveau mot de passe.'),
             const SizedBox(height: 12),
             TextField(
-              controller: controller,
+              controller: ctrl,
               decoration: const InputDecoration(
                   labelText: 'Utilisateur', border: OutlineInputBorder()),
             ),
@@ -274,14 +423,17 @@ class ActionsPanel extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Annuler')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('RÃ©initialiser')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Réinitialiser'),
+          ),
         ],
       ),
     );
+    ctrl.dispose();
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
@@ -306,11 +458,13 @@ class ActionsPanel extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Annuler')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-              child: const Text('OK')),
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );
@@ -347,13 +501,16 @@ class _ActionSection extends StatelessWidget {
 class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final Future<void> Function() onTap;
   final Color? color;
-  const _ActionTile(
-      {required this.icon,
-      required this.label,
-      required this.onTap,
-      this.color});
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.subtitle,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,6 +518,15 @@ class _ActionTile extends StatelessWidget {
       dense: true,
       leading: Icon(icon, size: 20, color: color),
       title: Text(label, style: color != null ? TextStyle(color: color) : null),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            )
+          : null,
       trailing: const Icon(Icons.chevron_right, size: 16),
       onTap: onTap,
     );

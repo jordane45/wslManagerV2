@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../models/snapshot.dart';
@@ -32,7 +32,7 @@ class SnapshotsScreen extends ConsumerWidget {
                       style: TextStyle(color: Colors.grey)),
                   SizedBox(height: 4),
                   Text(
-                    'CrÃ©ez des snapshots depuis l\'onglet dÃ©tail d\'une instance.',
+                    'Créez des snapshots depuis l\'onglet détail d\'une instance.',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -79,7 +79,7 @@ class SnapshotsScreen extends ConsumerWidget {
     final confirmed = await showConfirmDialog(context,
         title: 'Restaurer le snapshot',
         message:
-            'L\'instance "${snapshot.instanceName}" sera remplacÃ©e. Action irrÃ©versible.',
+            'L\'instance "${snapshot.instanceName}" sera remplacée. Action irréversible.',
         confirmLabel: 'Restaurer',
         destructive: true);
     if (!confirmed || !context.mounted) return;
@@ -113,7 +113,7 @@ class SnapshotsScreen extends ConsumerWidget {
     final confirmed = await showConfirmDialog(context,
         title: 'Supprimer le snapshot',
         message:
-            'Supprimer "${snapshot.name}" ? Le fichier .tar sera supprimÃ©.',
+            'Supprimer "${snapshot.name}" ? Le fichier .tar sera supprimé.',
         confirmLabel: 'Supprimer',
         destructive: true);
     if (!confirmed) return;

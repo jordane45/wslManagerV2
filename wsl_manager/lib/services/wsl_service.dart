@@ -359,8 +359,17 @@ class WslService {
     return (address: address, port: port);
   }
 
-  Future<void> openInVsCode(String name) async {
-    await Process.run('code', ['--remote', 'wsl+$name'], runInShell: true);
+  Future<void> openInVsCode(String name, {String? workDir}) async {
+    final remote = 'wsl+$name';
+    if (workDir != null && workDir.isNotEmpty) {
+      await Process.run(
+        'code',
+        ['--remote', remote, '--folder-uri', 'vscode-remote://$remote$workDir'],
+        runInShell: true,
+      );
+    } else {
+      await Process.run('code', ['--remote', remote], runInShell: true);
+    }
   }
 
   Future<void> openInExplorer(String name) async {
@@ -368,21 +377,24 @@ class WslService {
         runInShell: true);
   }
 
-  Future<void> openInTerminal(String name) async {
-    final arguments = ['wsl', '-d', name];
+  Future<void> openInExplorerPath(String windowsPath) async {
+    await Process.run('explorer.exe', ['/select,', windowsPath],
+        runInShell: false);
+  }
+
+  Future<void> openInTerminal(String name, {String? workDir}) async {
+    final wslArgs = workDir != null && workDir.isNotEmpty
+        ? ['wsl', '-d', name, '--cd', workDir]
+        : ['wsl', '-d', name];
+    final arguments = wslArgs;
     final logEntry = CommandLogService.instance.start('wt', arguments);
     final result = await Process.run('wt', arguments, runInShell: true);
     CommandLogService.instance.finish(logEntry, result);
     if (result.exitCode != 0) {
-      // Fallback for users without Windows Terminal installed
-      final fallbackArguments = [
-        '/c',
-        'start',
-        '',
-        'cmd.exe',
-        '/k',
-        'wsl -d $name'
-      ];
+      final fallbackCmd = workDir != null && workDir.isNotEmpty
+          ? 'wsl -d $name --cd "$workDir"'
+          : 'wsl -d $name';
+      final fallbackArguments = ['/c', 'start', '', 'cmd.exe', '/k', fallbackCmd];
       final fallbackLogEntry =
           CommandLogService.instance.start('cmd.exe', fallbackArguments);
       final fallbackResult = await Process.run(
@@ -391,6 +403,40 @@ class WslService {
         runInShell: true,
       );
       CommandLogService.instance.finish(fallbackLogEntry, fallbackResult);
+    }
+  }
+
+  Future<({String? basePath, String? vhdxPath, int? sizeBytes})>
+      getInstanceDiskInfo(String instanceName) async {
+    if (!RegExp(r"^[\w\-\.]+$").hasMatch(instanceName)) {
+      return (basePath: null, vhdxPath: null, sizeBytes: null);
+    }
+    try {
+      final psCmd = "\$key = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Lxss';"
+          "\$match = Get-ChildItem \$key -ErrorAction SilentlyContinue |"
+          " Where-Object { (Get-ItemProperty \$_.PSPath -ErrorAction SilentlyContinue).DistributionName -eq '$instanceName' } | Select-Object -First 1;"
+          "if (\$match) { (Get-ItemProperty \$match.PSPath).BasePath }";
+      final result = await Process.run(
+        'powershell',
+        ['-NoProfile', '-NonInteractive', '-Command', psCmd],
+        runInShell: false,
+        stdoutEncoding: null,
+        stderrEncoding: null,
+      );
+      final basePath = _decodeProcessOutput(result.stdout).trim();
+      if (basePath.isEmpty) {
+        return (basePath: null, vhdxPath: null, sizeBytes: null);
+      }
+      final vhdx = '$basePath\\ext4.vhdx';
+      final vhdxFile = File(vhdx);
+      final size = vhdxFile.existsSync() ? vhdxFile.lengthSync() : null;
+      return (
+        basePath: basePath,
+        vhdxPath: vhdxFile.existsSync() ? vhdx : null,
+        sizeBytes: size,
+      );
+    } catch (_) {
+      return (basePath: null, vhdxPath: null, sizeBytes: null);
     }
   }
 }

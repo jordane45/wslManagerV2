@@ -14,32 +14,33 @@ class StepName extends ConsumerStatefulWidget {
 }
 
 class _StepNameState extends ConsumerState<StepName> {
-  late final TextEditingController _ctrl;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _descCtrl;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.state.instanceName);
+    _nameCtrl = TextEditingController(text: widget.state.instanceName);
+    _descCtrl = TextEditingController(text: widget.state.description);
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _nameCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
 
-  void _validate(String value) {
+  void _validateName(String value) {
     final existing = ref.read(instancesProvider).valueOrNull
             ?.map((i) => i.name)
             .toList() ??
         [];
     setState(() => _error = validateInstanceName(value, existing: existing));
-    if (_error == null) {
-      widget.onChanged(widget.state.copyWith(instanceName: value));
-    } else {
-      widget.onChanged(widget.state.copyWith(instanceName: ''));
-    }
+    widget.onChanged(widget.state.copyWith(
+      instanceName: _error == null ? value : '',
+    ));
   }
 
   @override
@@ -53,7 +54,7 @@ class _StepNameState extends ConsumerState<StepName> {
               style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 24),
           TextField(
-            controller: _ctrl,
+            controller: _nameCtrl,
             autofocus: true,
             decoration: InputDecoration(
               labelText: 'Nom de l\'instance',
@@ -61,7 +62,7 @@ class _StepNameState extends ConsumerState<StepName> {
               border: const OutlineInputBorder(),
               errorText: _error,
             ),
-            onChanged: _validate,
+            onChanged: _validateName,
           ),
           const SizedBox(height: 8),
           Text(
@@ -69,6 +70,18 @@ class _StepNameState extends ConsumerState<StepName> {
             style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _descCtrl,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Description (optionnelle)',
+              hintText: 'Ex. : serveur de dev Node.js 18, usage personnel...',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) =>
+                widget.onChanged(widget.state.copyWith(description: v)),
           ),
         ],
       ),
