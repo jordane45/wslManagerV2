@@ -8,6 +8,7 @@ import '../../../models/wsl_instance.dart';
 import '../../../providers/instances_provider.dart';
 import '../../../providers/snapshots_provider.dart';
 import '../../../providers/templates_provider.dart';
+import '../../../providers/config_provider.dart';
 import '../../../services/instance_metadata_service.dart';
 import '../../../services/snapshot_service.dart';
 import '../../../services/template_service.dart';
@@ -326,7 +327,8 @@ class ActionsPanel extends ConsumerWidget {
     if (newName == null || !context.mounted) return;
     if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
     if (!context.mounted) return;
-    final installDir = await _showInstallDirDialog(context, 'C:\\WSL\\$newName');
+    final baseDir = ref.read(configProvider).valueOrNull?.defaultInstallDir ?? r'C:\WSL';
+    final installDir = await _showInstallDirDialog(context, '$baseDir\\$newName');
     if (installDir == null || !context.mounted) return;
     final tmp = '${Directory.systemTemp.path}\\wsl_dup_${instance.name}.tar';
 
@@ -373,7 +375,8 @@ class ActionsPanel extends ConsumerWidget {
     if (newName == null || !context.mounted) return;
     if (!await _checkDiskSpace(context, instance.diskSizeBytes)) return;
     if (!context.mounted) return;
-    final installDir = await _showInstallDirDialog(context, 'C:\\WSL\\$newName');
+    final baseDir = ref.read(configProvider).valueOrNull?.defaultInstallDir ?? r'C:\WSL';
+    final installDir = await _showInstallDirDialog(context, '$baseDir\\$newName');
     if (installDir == null || !context.mounted) return;
     final tmp = '${Directory.systemTemp.path}\\wsl_rename_${instance.name}.tar';
     final oldName = instance.name;

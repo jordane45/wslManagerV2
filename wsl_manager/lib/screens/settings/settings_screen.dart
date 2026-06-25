@@ -27,6 +27,14 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             _Section(title: l10n.settingsStorage, children: [
               _DirRow(
+                label: 'Dossier d\'installation par défaut',
+                value: cfg.defaultInstallDir,
+                browseTooltip: l10n.commonBrowse,
+                dialogTitle: l10n.commonChooseFolder,
+                onChanged: (v) =>
+                    _save(ref, cfg.copyWith(defaultInstallDir: v)),
+              ),
+              _DirRow(
                 label: l10n.settingsTemplatesDir,
                 value: cfg.templatesDir,
                 browseTooltip: l10n.commonBrowse,
