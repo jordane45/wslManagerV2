@@ -63,8 +63,38 @@ class _StepPathState extends State<StepPath> {
     }
   }
 
+  bool get _isWslInstallMode =>
+      widget.state.sourceType == SourceType.online &&
+      widget.state.useWebDownload &&
+      !(widget.state.officialDistroUrl?.isNotEmpty ?? false);
+
   @override
   Widget build(BuildContext context) {
+    if (_isWslInstallMode) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.info_outline,
+                color: Theme.of(context).colorScheme.primary, size: 32),
+            const SizedBox(height: 16),
+            Text(
+              'Emplacement géré par Windows',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Cette distro sera installée via wsl --install --web-download. '
+              'L\'emplacement du fichier image est géré automatiquement par Windows '
+              'et ne peut pas être personnalisé pour ce type d\'installation.',
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.all(24),

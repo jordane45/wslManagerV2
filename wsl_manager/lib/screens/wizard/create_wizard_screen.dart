@@ -116,6 +116,13 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
     'Récapitulatif',
   ];
 
+  // True when the online source will use `wsl --install --web-download` (no direct URL available).
+  // Distros with a download_url always use download + wsl --import instead.
+  bool get _isWslInstallMode =>
+      _state.sourceType == SourceType.online &&
+      _state.useWebDownload &&
+      !(_state.officialDistroUrl?.isNotEmpty ?? false);
+
   bool get _canProceed {
     switch (_step) {
       case 0:
@@ -126,17 +133,15 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
             ? (_state.officialDistroName?.isNotEmpty ?? false)
             : (_state.officialDistroUrl?.isNotEmpty ?? false);
       case 1:
-        return _state.useWebDownload && _state.sourceType == SourceType.online
-            ? true
-            : _state.instanceName.isNotEmpty;
+        // wsl --install handles its own naming; download+import needs an explicit name
+        return _isWslInstallMode ? true : _state.instanceName.isNotEmpty;
       case 2:
         return _state.username.isNotEmpty;
       case 3:
         return _state.password.length >= 8;
       case 4:
-        return _state.useWebDownload && _state.sourceType == SourceType.online
-            ? true
-            : _state.installPath.isNotEmpty;
+        // wsl --install doesn't support custom paths; download+import requires one
+        return _isWslInstallMode ? true : _state.installPath.isNotEmpty;
       default:
         return true;
     }
@@ -238,8 +243,15 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
 
   Future<void> _create(BuildContext context) async {
     final s = _state;
-    final webDownload = s.sourceType == SourceType.online && s.useWebDownload;
-    final effectiveName = webDownload ? s.officialDistroName! : s.instanceName;
+    // Use wsl --install --web-download only for distros that have no direct download URL.
+    // Distros with a URL always go through download + wsl --import (supports custom paths).
+    final useWslInstall = _isWslInstallMode;
+    final effectiveName = useWslInstall
+        ? s.officialDistroName!
+        : (s.instanceName.isNotEmpty ? s.instanceName : s.officialDistroName ?? s.instanceName);
+
+    final needsDownload = !useWslInstall &&
+        (s.sourceType == SourceType.online || s.sourceType == SourceType.url);
 
     final result = await showDialog<bool>(
       context: context,
@@ -247,11 +259,10 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
       builder: (_) => ProgressDialog(
         title: 'Création de l\'instance',
         steps: [
-          if (webDownload)
+          if (useWslInstall)
             ProgressStep('Installation via WSL (--web-download)...')
           else ...[
-            if (s.sourceType == SourceType.online || s.sourceType == SourceType.url)
-              ProgressStep('Téléchargement...'),
+            if (needsDownload) ProgressStep('Téléchargement...'),
             ProgressStep('Import WSL...'),
           ],
           ProgressStep('Configuration utilisateur...'),
@@ -262,11 +273,10 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
         task: (update, setProgress) async {
           int idx = 0;
 
-          if (webDownload) {
+          if (useWslInstall) {
             update(idx, StepStatus.running);
             await WslService.instance.installDistroWebDownload(
               s.officialDistroName!,
-              installPath: s.installPath.isNotEmpty ? s.installPath : null,
               onProgress: (p) => setProgress(idx, p),
             );
             update(idx, StepStatus.done);
@@ -274,7 +284,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
           } else {
             String tarPath = s.localTarPath ?? '';
 
-            if (s.sourceType == SourceType.online || s.sourceType == SourceType.url) {
+            if (needsDownload) {
               update(idx, StepStatus.running);
               final url = s.sourceType == SourceType.online
                   ? s.officialDistroUrl!
@@ -286,7 +296,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
             }
 
             update(idx, StepStatus.running);
-            await WslService.instance.importInstance(s.instanceName, s.installPath, tarPath);
+            await WslService.instance.importInstance(effectiveName, s.installPath, tarPath);
             update(idx, StepStatus.done);
             idx++;
           }
