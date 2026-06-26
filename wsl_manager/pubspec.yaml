@@ -2,7 +2,7 @@ name: wsl_manager
 description: "Application Windows 11 portable pour gérer visuellement les instances WSL."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 2.0.2+1
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -46,6 +46,9 @@ dependencies:
 
   # UUID
   uuid: ^3.0.6
+
+  # Infos app
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:

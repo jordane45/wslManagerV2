@@ -18,6 +18,9 @@ class _StepSourceState extends ConsumerState<StepSource> {
   List<_OfficialDistro> _distros = [];
   final _urlCtrl = TextEditingController();
 
+  String _sanitizeName(String raw) =>
+      raw.replaceAll('.', '-').replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '-');
+
   @override
   void initState() {
     super.initState();
@@ -73,6 +76,7 @@ class _StepSourceState extends ConsumerState<StepSource> {
                       onSelect: (d) => widget.onChanged(widget.state.copyWith(
                         officialDistroName: d.wslName,
                         officialDistroUrl: d.downloadUrl,
+                        instanceName: _sanitizeName(d.wslName),
                       )),
                     ),
                     const SizedBox(height: 4),

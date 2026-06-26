@@ -138,7 +138,7 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
       case 2:
         return _state.username.isNotEmpty;
       case 3:
-        return _state.password.length >= 8;
+        return _state.password.isNotEmpty;
       case 4:
         // wsl --install doesn't support custom paths; download+import requires one
         return _isWslInstallMode ? true : _state.installPath.isNotEmpty;

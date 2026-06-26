@@ -25,9 +25,9 @@ class _StepPathState extends State<StepPath> {
   @override
   void initState() {
     super.initState();
-    final nameForPath = widget.state.officialDistroName?.isNotEmpty == true
-        ? widget.state.officialDistroName!
-        : widget.state.instanceName;
+    final nameForPath = widget.state.instanceName.isNotEmpty
+        ? widget.state.instanceName
+        : (widget.state.officialDistroName ?? '');
     final defaultPath = widget.state.installPath.isNotEmpty
         ? widget.state.installPath
         : '${widget.defaultInstallBase}\\$nameForPath';
