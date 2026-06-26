@@ -24,16 +24,19 @@ class InstancesNotifier extends AsyncNotifier<List<WslInstance>> {
       for (var k = 0; k < runningNames.length; k++)
         runningNames[k]: toolResults[k],
     };
-    // Persist detected values to metadata for stopped instances to read later
+    // Persist detected values to metadata for stopped instances to read later.
+    // Detection uses OR logic: a badge set by explicit install (true) is never
+    // cleared by a negative detection result (dpkg might be unreliable/locked).
     for (final entry in toolMap.entries) {
       final meta = metadata[entry.key];
       final detected = entry.value;
-      if (meta == null ||
-          meta.hasDocker != detected.hasDocker ||
-          meta.hasPodman != detected.hasPodman) {
+      // Merge: detection can only upgrade null/false → true, never true → false.
+      final mergedDocker = detected.hasDocker ? true : meta?.hasDocker;
+      final mergedPodman = detected.hasPodman ? true : meta?.hasPodman;
+      if (meta?.hasDocker != mergedDocker || meta?.hasPodman != mergedPodman) {
         final updated = (meta ?? const InstanceMetadata()).copyWith(
-          hasDocker: detected.hasDocker,
-          hasPodman: detected.hasPodman,
+          hasDocker: mergedDocker,
+          hasPodman: mergedPodman,
         );
         await InstanceMetadataService.instance.save(entry.key, updated);
         metadata[entry.key] = updated;

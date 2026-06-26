@@ -328,7 +328,9 @@ class _CreateWizardScreenState extends ConsumerState<CreateWizardScreen> {
           );
           if (s.description.trim().isNotEmpty || s.installDocker || s.installPodman) {
             await InstanceMetadataService.instance.save(effectiveName, meta);
-            InstanceMetadataService.instance.invalidate();
+            // No invalidate() here: save() already keeps _cache in sync.
+            // Invalidating would force a disk re-read and lose the data if
+            // the disk write failed silently (empty catch in _persist).
           }
           await ref.read(instancesProvider.notifier).refresh();
           update(idx, StepStatus.done);
