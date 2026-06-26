@@ -24,7 +24,6 @@ String? validateLinuxUsername(String? value) {
 
 String? validatePassword(String? value) {
   if (value == null || value.isEmpty) return 'Le mot de passe est requis';
-  if (value.length < 8) return 'Minimum 8 caractères';
   return null;
 }
 

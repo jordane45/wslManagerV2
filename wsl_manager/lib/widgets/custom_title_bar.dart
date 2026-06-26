@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import '../main.dart' show kAppVersion;
 
 class CustomTitleBar extends StatelessWidget {
   const CustomTitleBar({super.key});
@@ -28,7 +29,7 @@ class CustomTitleBar extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'WSL Manager',
+              kAppVersion.isNotEmpty ? 'WSL Manager  v$kAppVersion' : 'WSL Manager',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w600,

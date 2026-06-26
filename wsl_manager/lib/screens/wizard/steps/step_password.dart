@@ -12,12 +12,23 @@ class StepPassword extends StatefulWidget {
 }
 
 class _StepPasswordState extends State<StepPassword> {
-  final _passCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
+  late final TextEditingController _passCtrl;
+  late final TextEditingController _confirmCtrl;
   bool _obscurePass = true;
   bool _obscureConfirm = true;
   String? _passError;
   String? _confirmError;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefill = widget.state.username;
+    _passCtrl = TextEditingController(text: prefill);
+    _confirmCtrl = TextEditingController(text: prefill);
+    if (prefill.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _validate());
+    }
+  }
 
   @override
   void dispose() {
@@ -82,13 +93,6 @@ class _StepPasswordState extends State<StepPassword> {
               ),
             ),
             onChanged: (_) => _validate(),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Minimum 8 caractères.',
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
