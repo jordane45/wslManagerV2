@@ -2,7 +2,7 @@ name: wsl_manager
 description: "Application Windows 11 portable pour gérer visuellement les instances WSL."
 publish_to: 'none'
 
-version: 2.0.2+1
+version: 2.0.5+1
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
