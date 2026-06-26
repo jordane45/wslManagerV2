@@ -137,3 +137,8 @@ Requires a `.ico` file (not PNG) at `assets/icons/app_icon.ico`. The menu is reg
 - **Rename = export + import + unregister**: WSL has no native rename command; simulate it in `WslService.renameInstance()`.
 - **Files encoding**: All project source files must be UTF-8 without BOM, LF line endings.
 - **Design docs**: `wsl_manager_output/TODO.md` contains the full 144-task development guide with code snippets for every service method, widget, and provider. Consult it before implementing any feature.
+
+## Release
+
+Utilise le skill projet `/git-release` (`.claude/skills/git-release/SKILL.md`) pour le cycle complet de release.
+Ce skill remplace le skill global : il utilise l'API REST GitHub (pas `gh` CLI, non installé), déclenche le build via `workflow_dispatch`, et connaît les spécificités du projet (token Windows Credential Manager, exclusion de `.claude/settings.local.json`, format de tag `V<major>.<minor>.<patch>`).
