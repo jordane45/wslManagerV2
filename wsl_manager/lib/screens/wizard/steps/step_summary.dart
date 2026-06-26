@@ -20,8 +20,10 @@ class StepSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final webDownload =
-        state.useWebDownload && state.sourceType == SourceType.online;
+    // Même condition que _isWslInstallMode dans create_wizard_screen.dart
+    final webDownload = state.sourceType == SourceType.online &&
+        state.useWebDownload &&
+        !(state.officialDistroUrl?.isNotEmpty ?? false);
 
     return ListView(
       padding: const EdgeInsets.all(24),
